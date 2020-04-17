@@ -1,13 +1,3 @@
-"""
-###############################################################################################
-    10-Armed Testbed (Reinforcement Learning: An Introduction, Sutton, Barto)
-    Created by Youn-Hee Han 12/27/2019, last update 12/27/2019
-
-    코드 참고 사이트:
-    한글 폰트 설치 참고 사이트: https://programmers.co.kr/learn/courses/21/lessons/950
-###############################################################################################
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -163,7 +153,7 @@ class Bandit(object):
     # 받아낸 보상 값을 통하여 추정 가치 갱신
     def step(self, selected_action, testbed):
         # 보상은 정규 분포(평균: q_*(at), 표준편차: 1)로 부터 샘플링함
-        reward = np.random.normal(testbed.q_true[selected_action], scale=1)
+        reward = np.random.normal(testbed.q_true[selected_action], scale=testbed.std)
 
         self.count_of_actions[selected_action] += 1     # 행동 수행 횟수 1 증가
 
@@ -547,9 +537,9 @@ def comparison_of_all_methods(max_runs, max_time_steps):
 
 if __name__ == '__main__':
     # prob_distribution_of_rewards()
-    # greedy_and_epsilon_greedy(max_runs=2000, max_time_steps=1000)
-    # greedy_and_epsilon_greedy(max_runs=2000, max_time_steps=4000)
-    #q_estimation_initial(max_runs=2000, max_time_steps=1000)
-    ucb_section(max_runs=2000, max_time_steps=1000)
-    #gradients(max_runs=2000, max_time_steps=1000)
-    #comparison_of_all_methods(max_runs=2000, max_time_steps=1000)
+    greedy_and_epsilon_greedy(max_runs=3000, max_time_steps=1000)
+    # greedy_and_epsilon_greedy(max_runs=3000, max_time_steps=4000)
+    #q_estimation_initial(max_runs=3000, max_time_steps=1000)
+    # ucb_section(max_runs=3000, max_time_steps=1000)
+    #gradients(max_runs=3000, max_time_steps=1000)
+    #comparison_of_all_methods(max_runs=3000, max_time_steps=1000)

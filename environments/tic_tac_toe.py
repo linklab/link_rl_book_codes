@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+from termcolor import colored
 
 PLAYER_TO_SYMBOL = ['*', 'O', 'X']
 PLAYER_1 = 1
@@ -128,15 +129,25 @@ class State:
         else:
             return [[i, j] for i in range(BOARD_ROWS) for j in range(BOARD_COLS) if self.data[i, j] == 0]
 
-    # 게임판 출력
+    #게임판 출력
     def print_board(self):
+        s = "-------------------\n"
         for i in range(self.board_rows):
-            print('-------------')
-            out = '| '
             for j in range(self.board_cols):
-                out += PLAYER_TO_SYMBOL[int(self.data[i, j])] + ' | '
-            print(out)
-        print('-------------')
+                s += "|{0}    ".format(i * 3 + j)
+            s += "|\n"
+
+            for j in range(self.board_cols):
+                s += "|  {0}  ".format(colored("*OX"[int(self.data[i, j])], "red"))
+            s += "|\n"
+
+            for j in range(self.board_cols):
+                s += "|     ".format(i * 3 + j)
+            s += "|\n"
+
+            s += "-------------------\n"
+        print(s)
+
 
     def __repr__(self):
         self_str = ""

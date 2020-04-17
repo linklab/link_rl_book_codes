@@ -327,7 +327,7 @@ def ddqn_with_per(agent, n_episodes=2000, max_t=1000, eps_start=1.0, eps_end=0.0
             print('\nEnvironment solved in {:d} episodes! \tAverage Score: {:.2f}'.format(i_episode-10, np.mean(scores_window)))
             break
 
-env = gym.make('CartPole-v0')
+env = gym.make('CartPole-v1')
 env.seed(0)
 agent = DDQNPERAgent(state_size=4, action_size=2, seed=0)
 ddqn_with_per(agent, fname='ddqn_per')
