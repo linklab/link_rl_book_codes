@@ -368,7 +368,7 @@ def q_estimation_initial(max_runs, max_time_steps):
     )
 
 
-def ucb_section(max_runs, max_time_steps):
+def ucb_selection(max_runs, max_time_steps):
     testbed = Testbed(num_arms=10, mean=0.0, std=1.0, compensated_reward=0.0)
     bandits = [
         Bandit(
@@ -398,7 +398,7 @@ def ucb_section(max_runs, max_time_steps):
         target_values=mean_cumulative_rewards,
         xlabel="타임 스텝",
         ylabel="평균 누적 보상",
-        filename="images/ucb_section_rewards.png"
+        filename="images/ucb_selection_rewards.png"
     )
 
     draw_figure(
@@ -411,7 +411,7 @@ def ucb_section(max_runs, max_time_steps):
         target_values=optimal_action_rates * 100,
         xlabel="타임 스텝",
         ylabel="최적 행동 비율(%)",
-        filename="images/ucb_section_optimal_actions.png"
+        filename="images/ucb_selection_optimal_actions.png"
     )
 
 
@@ -536,10 +536,10 @@ def comparison_of_all_methods(max_runs, max_time_steps):
 
 
 if __name__ == '__main__':
-    # prob_distribution_of_rewards()
+    prob_distribution_of_rewards()
     greedy_and_epsilon_greedy(max_runs=3000, max_time_steps=1000)
-    # greedy_and_epsilon_greedy(max_runs=3000, max_time_steps=4000)
-    #q_estimation_initial(max_runs=3000, max_time_steps=1000)
-    # ucb_section(max_runs=3000, max_time_steps=1000)
-    #gradients(max_runs=3000, max_time_steps=1000)
-    #comparison_of_all_methods(max_runs=3000, max_time_steps=1000)
+    greedy_and_epsilon_greedy(max_runs=3000, max_time_steps=4000)
+    q_estimation_initial(max_runs=3000, max_time_steps=1000)
+    ucb_selection(max_runs=3000, max_time_steps=1000)
+    gradients(max_runs=3000, max_time_steps=1000)
+    comparison_of_all_methods(max_runs=3000, max_time_steps=1000)
