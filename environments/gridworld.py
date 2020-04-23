@@ -19,7 +19,8 @@ class GridWorld(gym.Env):
             start_state=(0, 0),
             terminal_state=[(4, 4)],
             transition_reward=0.0,
-            terminal_reward=1.0
+            terminal_reward=1.0,
+            unique_steps=[]
     ):
         self.__version__ = "0.0.1"
 
@@ -44,24 +45,27 @@ class GridWorld(gym.Env):
             self.observation_space.STATES.remove(state)
 
         # 모든 가능한 행동
-        self.observation_space.ACTION_UP = 0
-        self.observation_space.ACTION_DOWN = 1
-        self.observation_space.ACTION_LEFT = 2
-        self.observation_space.ACTION_RIGHT = 3
-        self.observation_space.ACTION_SYMBOLS = ["\u2191", "\u2193", "\u2190", "\u2192"]
-        self.observation_space.ACTIONS = [
-            self.observation_space.ACTION_UP,
-            self.observation_space.ACTION_DOWN,
-            self.observation_space.ACTION_LEFT,
-            self.observation_space.ACTION_RIGHT
+        self.action_space.ACTION_UP = 0
+        self.action_space.ACTION_DOWN = 1
+        self.action_space.ACTION_LEFT = 2
+        self.action_space.ACTION_RIGHT = 3
+        self.action_space.ACTION_SYMBOLS = ["\u2191", "\u2193", "\u2190", "\u2192"]
+        self.action_space.ACTIONS = [
+            self.action_space.ACTION_UP,
+            self.action_space.ACTION_DOWN,
+            self.action_space.ACTION_LEFT,
+            self.action_space.ACTION_RIGHT
         ]
-        self.observation_space.num_actions = len(self.observation_space.ACTIONS)
+        self.action_space.num_actions = len(self.action_space.ACTIONS)
+
+        # 기본 GridWorld 에 추가되는 환경 조건들 집합
+        self.unique_steps = unique_steps
 
         # 시작 상태 위치
         self.observation_space.START_STATE = start_state
 
         # 종료 상태 위치
-        self.observation_space.GOAL_STATES = terminal_state
+        self.observation_space.TERMINAL_STATES = terminal_state
 
         # 최대 타임 스텝
         self.max_steps = float('inf')
@@ -76,27 +80,39 @@ class GridWorld(gym.Env):
         self.current_state = self.observation_space.START_STATE
         return self.current_state
 
+    def moveto(self, state):
+        self.current_state = state
+
     # take @action in @state
     # @return: (reward, new state)
     def step(self, action):
         x, y = self.current_state
-        if action == self.observation_space.ACTION_UP:
+
+        # 기본 GridWorld에 추가된 조건들(ex. 함정, 웜홀 등) 적용
+        # unique_step은 추가 조건 판정 및 수행에 관여하는 사용자 정의 함수
+        # info['exec'] 로 추가 조건이 수행되었는지를 판정한다.
+        for unique_step in self.unique_steps:
+            (x, y), reward, done, info = unique_step((x, y), action)
+            if info and info['exec']:
+                return (x, y), reward, done, None
+
+        if action == self.action_space.ACTION_UP:
             x = max(x - 1, 0)
-        elif action == self.observation_space.ACTION_DOWN:
+        elif action == self.action_space.ACTION_DOWN:
             x = min(x + 1, self.HEIGHT - 1)
-        elif action == self.observation_space.ACTION_LEFT:
+        elif action == self.action_space.ACTION_LEFT:
             y = max(y - 1, 0)
-        elif action == self.observation_space.ACTION_RIGHT:
+        elif action == self.action_space.ACTION_RIGHT:
             y = min(y + 1, self.WIDTH - 1)
 
-        if (x, y) in self.observation_space.GOAL_STATES:
+        if (x, y) in self.observation_space.TERMINAL_STATES:
             reward = self.terminal_reward
         else:
             reward = self.transition_reward
 
         self.current_state = (x, y)
 
-        if self.current_state in self.observation_space.GOAL_STATES:
+        if self.current_state in self.observation_space.TERMINAL_STATES:
             done = True
         else:
             done = False
