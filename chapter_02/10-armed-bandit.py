@@ -536,10 +536,10 @@ def comparison_of_all_methods(max_runs, max_time_steps):
 
 
 if __name__ == '__main__':
-    prob_distribution_of_rewards()
-    greedy_and_epsilon_greedy(max_runs=3000, max_time_steps=1000)
+    #prob_distribution_of_rewards()
+    #greedy_and_epsilon_greedy(max_runs=3000, max_time_steps=1000)
     greedy_and_epsilon_greedy(max_runs=3000, max_time_steps=4000)
-    q_estimation_initial(max_runs=3000, max_time_steps=1000)
-    ucb_selection(max_runs=3000, max_time_steps=1000)
-    gradients(max_runs=3000, max_time_steps=1000)
-    comparison_of_all_methods(max_runs=3000, max_time_steps=1000)
+    #q_estimation_initial(max_runs=3000, max_time_steps=1000)
+    #ucb_selection(max_runs=3000, max_time_steps=1000)
+    #gradients(max_runs=3000, max_time_steps=1000)
+    #comparison_of_all_methods(max_runs=3000, max_time_steps=1000)
