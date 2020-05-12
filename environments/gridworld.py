@@ -164,7 +164,7 @@ class GridWorld(gym.Env):
 
         return reward
 
-    def get_deterministic_probability(self, state, action):
+    def get_state_action_probability(self, state, action):
         next_i, next_j = self.get_next_state(state, action)
 
         reward = self.get_reward(state, (next_i, next_j))

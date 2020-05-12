@@ -60,7 +60,7 @@ class PolicyIteration:
                     else:
                         values = []
                         for action in self.env.action_space.ACTIONS:
-                            (next_i, next_j), reward, prob = env.get_deterministic_probability(state=(i, j), action=action)
+                            (next_i, next_j), reward, prob = env.get_state_action_probability(state=(i, j), action=action)
 
                             # Bellman-Equation, 벨만 방정식 적용
                             values.append(
@@ -95,7 +95,7 @@ class PolicyIteration:
                 else:
                     q_func = []
                     for action in self.env.action_space.ACTIONS:
-                        (next_i, next_j), reward, prob = env.get_deterministic_probability(state=(i, j), action=action)
+                        (next_i, next_j), reward, prob = env.get_state_action_probability(state=(i, j), action=action)
                         q_func.append(
                             prob * (reward + DISCOUNT_RATE * self.state_values[next_i, next_j])
                         )

@@ -53,7 +53,7 @@ def compute_state_value(env):
                 else:
                     values = []
                     for action in env.action_space.ACTIONS:
-                        (next_i, next_j), reward, prob = env.get_deterministic_probability(state=(i, j), action=action)
+                        (next_i, next_j), reward, prob = env.get_state_action_probability(state=(i, j), action=action)
 
                         # Bellman-Equation, 벨만 방정식 적용
                         values.append(
