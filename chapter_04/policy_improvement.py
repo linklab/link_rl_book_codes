@@ -6,9 +6,9 @@ from environments.gridworld import GridWorld
 
 GRID_HEIGHT = 4
 GRID_WIDTH = 4
-TERMINAL_STATE = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
-ACTION_PROBABILITY = 0.25
-
+TERMINAL_STATE = [(0, 0), (GRID_HEIGHT - 1, GRID_WIDTH - 1)]
+DISCOUNT_RATE = 1.0
+THETA = 0.0001
 
 # 학습 이후의 가치함수를 표 형태로 그리는 함수
 def draw_image(image):
@@ -36,56 +36,61 @@ def draw_image(image):
 
 
 # 상태 가치 함수를 계산하는 함수
-def compute_state_value(discounting_rate=1.0):
-    # 모든 값이 0으로 채워진 4x4 맵 생성, 상태 가치 함수로 해석
-    env = GridWorld(
-        height=GRID_HEIGHT,
-        width=GRID_WIDTH,
-        start_state=(0, 0),
-        terminal_state=TERMINAL_STATE,
-        transition_reward=-1,
-        terminal_reward=-1
-    )
-    env.reset()
+def compute_state_value(env):
+    ACTION_PROBABILITY = 0.25
 
     state_values = np.zeros((GRID_HEIGHT, GRID_WIDTH))
 
-    iteration = 0
     # 가치 함수의 값들이 수렴할 때까지 반복
+    iter_num = 0
     while True:
         old_state_values = state_values.copy()
 
         for i in range(GRID_HEIGHT):
             for j in range(GRID_WIDTH):
-                value = 0
-                for action in env.action_space.ACTIONS:
-                    env.moveto((i, j))
+                if (i, j) in TERMINAL_STATE:
+                    state_values[i][j] = 0.0
+                else:
+                    values = []
+                    for action in env.action_space.ACTIONS:
+                        (next_i, next_j), reward, prob = env.get_deterministic_probability(state=(i, j), action=action)
 
-                    if (i, j) in TERMINAL_STATE:
-                        (next_i, next_j), reward, done, _ = ((i, j), 0, None, None)
-                    else:
-                        (next_i, next_j), reward, done, _ = env.step(action)
+                        # Bellman-Equation, 벨만 방정식 적용
+                        values.append(
+                            ACTION_PROBABILITY * prob * (reward + DISCOUNT_RATE * state_values[next_i, next_j])
+                        )
 
-                    # 모든 행동에 대해 그 행동의 확률, 행동 이후의 누적 기대 보상을 상태 가치 갱신에 사용
-                    value += ACTION_PROBABILITY * (reward + discounting_rate * state_values[next_i, next_j])
+                    state_values[i][j] = np.sum(values)
 
-                state_values[i, j] = value
+        iter_num += 1
 
-        # 갱신되는 값이 0.0001을 기준으로 수렴하는지 판정
+        # 갱신되는 값이 THETA_1(=0.0001)을 기준으로 수렴하는지 판정
         max_delta_value = abs(old_state_values - state_values).max()
-        if max_delta_value < 1e-4:
+        if max_delta_value < THETA:
             break
 
-        iteration += 1
-
-    return state_values, iteration
+    return state_values, iter_num
 
 
 def grid_world_policy_improvement():
-    # 동일 장소(in-place) 전략 기반으로 수렴 시킨 상태 가치를 이미지로 저장하고 반복 횟수 반환 받음
-    state_values, iteration = compute_state_value()
+    # 그리드 월드 환경 객체 생성
+    env = GridWorld(
+        height=GRID_HEIGHT,
+        width=GRID_WIDTH,
+        start_state=(0, 0),
+        terminal_state=TERMINAL_STATE,
+        transition_reward=-1.0,
+        terminal_reward=-1.0,
+        outward_reward=-1.0
+    )
 
-    print('in-place  전략: {} 회 반복'.format(iteration))
+    env.reset()
+
+    # 수렴 시킨 상태 가치를 이미지로 저장하고 반복 횟수 반환 받음
+    state_values, iteration = compute_state_value(env)
+
+    print('정책 평가 --> 상태 가치 수렴: {} 회 반복'.format(iteration))
+    print(state_values)
 
     draw_image(np.round(state_values, decimals=2))
     plt.savefig('images/state_values.png')
