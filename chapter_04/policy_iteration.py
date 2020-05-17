@@ -106,7 +106,9 @@ class PolicyIteration:
         if error > THETA_2:
             is_policy_stable = False
 
-        return new_policy, is_policy_stable, error
+        self.policy = new_policy
+
+        return is_policy_stable, error
 
     # 정책 반복 함수
     def start_iteration(self):
@@ -120,7 +122,7 @@ class PolicyIteration:
             iter_num_policy_evaluation = self.policy_evaluation()
             print("*** 정책 평가 [수렴까지 누적 반복 횟수: {0}] ***".format(iter_num_policy_evaluation))
 
-            self.policy, is_policy_stable, error = self.policy_improvement()
+            is_policy_stable, error = self.policy_improvement()
             print("*** 정책 개선 [에러 값: {0:7.5f}] ***".format(error))
 
             iter_num += 1
