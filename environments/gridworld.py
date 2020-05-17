@@ -20,7 +20,8 @@ class GridWorld(gym.Env):
             terminal_state=[(4, 4)],
             transition_reward=0.0,
             terminal_reward=1.0,
-            unique_steps=[]
+            outward_reward=-1.0,
+            warmhole_states=None
     ):
         self.__version__ = "0.0.1"
 
@@ -33,9 +34,8 @@ class GridWorld(gym.Env):
         # 그리드월드의 가로 길이
         self.WIDTH = width
 
-        self.num_states = self.WIDTH * self.HEIGHT
-
         self.observation_space.STATES = []
+        self.observation_space.num_states = self.WIDTH * self.HEIGHT
 
         for i in range(self.HEIGHT):
             for j in range(self.WIDTH):
@@ -58,9 +58,6 @@ class GridWorld(gym.Env):
         ]
         self.action_space.num_actions = len(self.action_space.ACTIONS)
 
-        # 기본 GridWorld 에 추가되는 환경 조건들 집합
-        self.unique_steps = unique_steps
-
         # 시작 상태 위치
         self.observation_space.START_STATE = start_state
 
@@ -73,7 +70,9 @@ class GridWorld(gym.Env):
         self.transition_reward = transition_reward
 
         self.terminal_reward = terminal_reward
+        self.outward_reward = outward_reward
 
+        self.warmhole_states = warmhole_states
         self.current_state = None
 
     def reset(self):
@@ -83,41 +82,113 @@ class GridWorld(gym.Env):
     def moveto(self, state):
         self.current_state = state
 
+    def is_warmhole_state(self, state):
+        i, j = state
+
+        if self.warmhole_states is not None and len(self.warmhole_states) > 0:
+            for warmhole_info in self.warmhole_states:
+                warmhole_state = warmhole_info[0]
+                if i == warmhole_state[0] and j == warmhole_state[1]:
+                    return True
+        return False
+
+    def get_next_state_warmhole(self, state):
+        i, j = state
+        next_state = None
+
+        for warmhole_info in self.warmhole_states:
+            warmhole_state = warmhole_info[0]
+            warmhole_prime_state = warmhole_info[1]
+
+            if i == warmhole_state[0] and j == warmhole_state[1]:
+                next_state = warmhole_prime_state
+                break
+        return next_state
+
+    def get_reward_warmhole(self, state):
+        i, j = state
+        reward = None
+
+        for warmhole_info in self.warmhole_states:
+            warmhole_state = warmhole_info[0]
+            warmhole_reward = warmhole_info[2]
+
+            if i == warmhole_state[0] and j == warmhole_state[1]:
+                reward = warmhole_reward
+                break
+
+        return reward
+
+    def get_next_state(self, state, action):
+        i, j = state
+
+        if self.is_warmhole_state(state):
+            next_state = self.get_next_state_warmhole(state)
+            next_i = next_state[0]
+            next_j = next_state[1]
+        elif (i, j) in self.observation_space.TERMINAL_STATES:
+            next_i = i
+            next_j = j
+        else:
+            if action == self.action_space.ACTION_UP:
+                next_i = max(i - 1, 0)
+                next_j = j
+            elif action == self.action_space.ACTION_DOWN:
+                next_i = min(i + 1, self.HEIGHT - 1)
+                next_j = j
+            elif action == self.action_space.ACTION_LEFT:
+                next_i = i
+                next_j = max(j - 1, 0)
+            elif action == self.action_space.ACTION_RIGHT:
+                next_i = i
+                next_j = min(j + 1, self.WIDTH - 1)
+            else:
+                raise ValueError()
+
+        return next_i, next_j
+
+    def get_reward(self, state, next_state):
+        i, j = state
+        next_i, next_j = next_state
+
+        if self.is_warmhole_state(state):
+            reward = self.get_reward_warmhole(state)
+        else:
+            if (next_i, next_j) in self.observation_space.TERMINAL_STATES:
+                reward = self.terminal_reward
+            else:
+                if i == next_i and j == next_j:
+                    reward = self.outward_reward
+                else:
+                    reward = self.transition_reward
+
+        return reward
+
+    def get_state_action_probability(self, state, action):
+        next_i, next_j = self.get_next_state(state, action)
+
+        reward = self.get_reward(state, (next_i, next_j))
+        prob = 1.0
+
+        return (next_i, next_j), reward, prob
+
     # take @action in @state
     # @return: (reward, new state)
     def step(self, action):
-        x, y = self.current_state
+        i, j = self.current_state
 
-        # 기본 GridWorld에 추가된 조건들(ex. 함정, 웜홀 등) 적용
-        # unique_step은 추가 조건 판정 및 수행에 관여하는 사용자 정의 함수
-        # info['exec'] 로 추가 조건이 수행되었는지를 판정한다.
-        for unique_step in self.unique_steps:
-            (x, y), reward, done, info = unique_step((x, y), action)
-            if info and info['exec']:
-                return (x, y), reward, done, None
+        next_i, next_j = self.get_next_state(state=self.current_state, action=action)
 
-        if action == self.action_space.ACTION_UP:
-            x = max(x - 1, 0)
-        elif action == self.action_space.ACTION_DOWN:
-            x = min(x + 1, self.HEIGHT - 1)
-        elif action == self.action_space.ACTION_LEFT:
-            y = max(y - 1, 0)
-        elif action == self.action_space.ACTION_RIGHT:
-            y = min(y + 1, self.WIDTH - 1)
+        reward = self.get_reward(self.current_state, (next_i, next_j))
 
-        if (x, y) in self.observation_space.TERMINAL_STATES:
-            reward = self.terminal_reward
-        else:
-            reward = self.transition_reward
-
-        self.current_state = (x, y)
+        self.current_state = (next_i, next_j)
 
         if self.current_state in self.observation_space.TERMINAL_STATES:
             done = True
         else:
             done = False
 
-        return (x, y), reward, done, None
+        return (next_i, next_j), reward, done, None
 
     def render(self, mode='human'):
         for i in range(self.HEIGHT):
