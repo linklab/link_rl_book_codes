@@ -105,7 +105,7 @@ def grid_world_optimal_values(env):
                 # 주어진 상태에서 가능한 모든 행동들의 결과로 다음 상태들을 갱신
                 for action in env.action_space.ACTIONS:
                     (next_i, next_j), reward, prob = env.get_state_action_probability(state=(i, j), action=action)
-                    
+
                     # Bellman Optimality Equation, 벨만 최적 방정식 적용
                     values.append(
                         prob * (reward + DISCOUNT_RATE * value_function[next_i, next_j])

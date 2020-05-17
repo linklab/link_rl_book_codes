@@ -72,7 +72,7 @@ def compute_state_value(env):
     return state_values, iter_num
 
 
-def grid_world_policy_improvement():
+def grid_world_policy_evaluation():
     # 그리드 월드 환경 객체 생성
     env = GridWorld(
         height=GRID_HEIGHT,
@@ -103,4 +103,4 @@ if __name__ == '__main__':
     if not os.path.exists('images/'):
         os.makedirs('images/')
 
-    grid_world_policy_improvement()
+    grid_world_policy_evaluation()
