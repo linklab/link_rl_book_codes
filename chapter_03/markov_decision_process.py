@@ -127,7 +127,7 @@ def grid_world_optimal_values():
                 for action in env.action_space.ACTIONS:
                     env.moveto((i, j))
                     (next_i, next_j), reward, _, _ = env.step(action)
-                    # Value-Iteration 기법 적용
+                    # 상태 가치 함수의 벨만 최적 방정식 적용
                     values.append(reward + DISCOUNTING_RATE * value_function[next_i, next_j])
 
                 # 새롭게 계산된 상태 가치 중 최대 상태 가치로 현재 상태의 가치로 갱신
