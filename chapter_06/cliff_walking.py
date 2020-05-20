@@ -29,7 +29,7 @@ ACTIONS = [UP_ACTION, DOWN_ACTION, LEFT_ACTION, RIGHT_ACTION]
 
 # 초기 상태와 종료 상태
 START_STATE = [3, 0]
-TERMINAL_STATE = [3, 11]
+TERMINAL_STATES = [[3, 11]]
 
 
 def step(state, action):
@@ -94,7 +94,7 @@ def sarsa(q_value, expected=False, step_size=ALPHA):
     action = choose_action(state, q_value)
     sum_of_rewards = 0.0
 
-    while state != TERMINAL_STATE:
+    while state not in TERMINAL_STATES:
         next_state, reward = step(state, action)
         next_action = choose_action(next_state, q_value)
         sum_of_rewards += reward
@@ -123,7 +123,7 @@ def sarsa(q_value, expected=False, step_size=ALPHA):
 def q_learning(q_value, step_size=ALPHA):
     state = START_STATE
     sum_of_rewards = 0.0
-    while state != TERMINAL_STATE:
+    while state not in TERMINAL_STATES:
         action = choose_action(state, q_value)
         next_state, reward = step(state, action)
         sum_of_rewards += reward
@@ -141,7 +141,7 @@ def print_optimal_policy(q_value):
     for i in range(0, WORLD_HEIGHT):
         optimal_policy.append([])
         for j in range(0, WORLD_WIDTH):
-            if [i, j] == TERMINAL_STATE:
+            if [i, j] not in TERMINAL_STATES:
                 optimal_policy[-1].append('G')
                 continue
             best_action = np.argmax(q_value[i, j, :])

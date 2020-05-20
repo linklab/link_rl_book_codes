@@ -14,7 +14,7 @@ STICK = 1  # 카드 요청 종료.
 ACTIONS = [HIT, STICK]
 
 # 플레이어의 전략
-# 현재 카드의 총합이 20, 21인 경우 STICK. 그 외엔 HIT
+# 현재 카드의 총합이 20, 21인 경우 STICK. 그 외 12, 13, ..., 19에는 HIT
 POLICY_OF_PLAYER = np.zeros(22, dtype=np.int)
 for i in range(12, 20):
     POLICY_OF_PLAYER[i] = HIT
@@ -84,7 +84,7 @@ def play_black_jack(policy_of_player, initial_state=None, initial_action=None):
                 assert player_cards_sum == 22
                 player_cards_sum -= 10
             else:
-                usable_ace_player = usable_ace_player | (1 == card)
+                usable_ace_player = usable_ace_player or (1 == card)
 
         # 딜러에게 카드 전달. 첫 번째 카드를 공개한다고 가정
         dealer_card1 = get_card()
@@ -101,6 +101,7 @@ def play_black_jack(policy_of_player, initial_state=None, initial_action=None):
     # 딜러의 카드 총합 계산
     dealer_cards_sum = card_value(dealer_card1) + card_value(dealer_card2)
     usable_ace_dealer = 1 in (dealer_card1, dealer_card2)
+
     # 초기 상태에서 총합이 21을 넘기면 에이스가 2개인 것이므로 하나를 1로써 취급
     if dealer_cards_sum > 21:
         assert dealer_cards_sum == 22
@@ -313,15 +314,15 @@ def mc_exploring_start():
             xticklabels=range(1, 11),
             yticklabels=list(reversed(range(12, 22)))
         )
-        fig.set_ylabel('플레이어 카드 합', fontsize=50)
-        fig.set_xlabel('공개된 딜러 카드', fontsize=50)
+        fig.set_ylabel('플레이어 카드 숫자 합', fontsize=50)
+        fig.set_xlabel('공개된 딜러 카드 숫자', fontsize=50)
         fig.set_title(title, fontsize=50, fontweight='bold')
 
     plt.savefig('images/monte_carlo_exploring_start.png')
     plt.close()
 
 
-def mc_on_policy():
+def mc_prediction():
     states_usable_ace_1, states_no_usable_ace_1 = monte_carlo_on_policy(10000)
     states_usable_ace_2, states_no_usable_ace_2 = monte_carlo_on_policy(500000)
 
@@ -353,11 +354,11 @@ def mc_on_policy():
             vmin=-1.0,
             vmax=1.0
         )
-        fig.set_ylabel('플레이어 카드 합', fontsize=50)
-        fig.set_xlabel('공개된 딜러 카드', fontsize=50)
+        fig.set_ylabel('플레이어 카드 숫자 합', fontsize=50)
+        fig.set_xlabel('공개된 딜러 카드 숫자', fontsize=50)
         fig.set_title(title, fontsize=50, fontweight='bold')
 
-    plt.savefig('images/monte_carlo_on_policy.png')
+    plt.savefig('images/monte_carlo_prediction.png')
     plt.close()
 
 
@@ -395,6 +396,6 @@ def mc_off_policy():
 
 if __name__ == '__main__':
     # Monte-Carlo On-policy, 탐험적 시작, Off-policy
-    mc_on_policy()
+    mc_prediction()
     #mc_exploring_start()
     #mc_off_policy()

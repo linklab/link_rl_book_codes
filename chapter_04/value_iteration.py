@@ -3,12 +3,13 @@ from environments.gridworld import GridWorld
 
 GRID_HEIGHT = 4
 GRID_WIDTH = 4
-TERMINAL_STATE = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
+TERMINAL_STATES = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
+
 DISCOUNT_RATE = 1.0
 THETA_1 = 0.0001
 THETA_2 = 0.0001
-
 MAX_EPISODES = 5000
+
 
 def softmax(a):
     exp_a = np.exp(a)
@@ -33,7 +34,7 @@ class ValueIteration:
         for i in range(GRID_HEIGHT):
             for j in range(GRID_WIDTH):
                 for action in self.env.action_space.ACTIONS:
-                    if (i, j) in TERMINAL_STATE:
+                    if (i, j) in TERMINAL_STATES:
                         self.policy[i][j][action] = 0.00
                     else:
                         self.policy[i][j][action] = 0.25
@@ -56,7 +57,7 @@ class ValueIteration:
 
             for i in range(GRID_HEIGHT):
                 for j in range(GRID_WIDTH):
-                    if (i, j) in TERMINAL_STATE:
+                    if (i, j) in TERMINAL_STATES:
                         state_values[i][j] = 0.0
                     else:
                         values = []
@@ -86,7 +87,7 @@ class ValueIteration:
         # 행동-가치 함수 생성
         for i in range(GRID_HEIGHT):
             for j in range(GRID_WIDTH):
-                if (i, j) in TERMINAL_STATE:
+                if (i, j) in TERMINAL_STATES:
                     for action in self.env.action_space.ACTIONS:
                         self.policy[i][j][action] = 0.0
                 else:
@@ -118,7 +119,7 @@ if __name__ == '__main__':
         height=GRID_HEIGHT,
         width=GRID_WIDTH,
         start_state=(0, 0),
-        terminal_state=TERMINAL_STATE,
+        terminal_state=TERMINAL_STATES,
         transition_reward=-1.0,
         terminal_reward=-1.0,
         outward_reward=-1.0

@@ -6,7 +6,7 @@ from environments.gridworld import GridWorld
 
 GRID_HEIGHT = 4
 GRID_WIDTH = 4
-TERMINAL_STATE = [(0, 0), (GRID_HEIGHT - 1, GRID_WIDTH - 1)]
+TERMINAL_STATES = [(0, 0), (GRID_HEIGHT - 1, GRID_WIDTH - 1)]
 DISCOUNT_RATE = 1.0
 THETA = 0.0001
 
@@ -48,7 +48,7 @@ def compute_state_value(env):
 
         for i in range(GRID_HEIGHT):
             for j in range(GRID_WIDTH):
-                if (i, j) in TERMINAL_STATE:
+                if (i, j) in TERMINAL_STATES:
                     state_values[i][j] = 0.0
                 else:
                     values = []
@@ -57,7 +57,7 @@ def compute_state_value(env):
 
                         # Bellman-Equation, 벨만 방정식 적용
                         values.append(
-                            ACTION_PROBABILITY * prob * (reward + DISCOUNT_RATE * state_values[next_i, next_j])
+                            ACTION_PROBABILITY * prob * (reward + DISCOUNT_RATE * old_state_values[next_i, next_j])
                         )
 
                     state_values[i][j] = np.sum(values)
@@ -78,7 +78,7 @@ def grid_world_policy_evaluation():
         height=GRID_HEIGHT,
         width=GRID_WIDTH,
         start_state=(0, 0),
-        terminal_state=TERMINAL_STATE,
+        terminal_state=TERMINAL_STATES,
         transition_reward=-1.0,
         terminal_reward=-1.0,
         outward_reward=-1.0
