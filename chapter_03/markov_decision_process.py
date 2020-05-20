@@ -30,23 +30,23 @@ def unique_step_wormhole(state, action):
 
 
 # 학습 이후의 가치함수를 표 형태로 그리는 함수
-def draw_image(image):
+def draw_image(state_values, filename):
     # 축 표시 제거, 크기 조절 등 이미지 그리기 이전 설정 작업
     fig, axis = plt.subplots()
     axis.set_axis_off()
     table = Table(axis, bbox=[0, 0, 1, 1])
 
-    num_rows, num_cols = image.shape
+    num_rows, num_cols = state_values.shape
     width, height = 1.0 / num_cols, 1.0 / num_rows
 
     # 렌더링할 이미지에 표 셀 추가
-    for (i, j), val in np.ndenumerate(image):
+    for (i, j), val in np.ndenumerate(state_values):
         if val == 0.0:
             val = ''
         table.add_cell(i, j, width, height, text=val, loc='center', facecolor='white')
 
     # 행, 열 라벨 추가
-    for i in range(len(image)):
+    for i in range(len(state_values)):
         table.add_cell(i, -1, width, height, text=i+1, loc='right', edgecolor='none', facecolor='none')
         table.add_cell(-1, i, width, height/2, text=i+1, loc='center', edgecolor='none', facecolor='none')
 
@@ -54,6 +54,9 @@ def draw_image(image):
          cell.get_text().set_fontsize(20)
 
     axis.add_table(table)
+
+    plt.savefig(filename, dpi=300)
+
 
 
 # GRID_WORLD 첫번째 예제
@@ -125,10 +128,11 @@ def grid_world_optimal_values(env):
 
 # MAIN
 if __name__ == '__main__':
+    if not os.path.exists('images/'):
+        os.makedirs('images/')
+
     value_function = np.zeros((GRID_HEIGHT, GRID_WIDTH))
-    draw_image(np.round(value_function, decimals=0))
-    plt.savefig('images/empty_grid_world.png')
-    plt.close()
+    draw_image(np.round(value_function, decimals=0), 'images/empty_grid_world.png')
 
     # 5x5 맵 생성
     env = GridWorld(
@@ -144,15 +148,11 @@ if __name__ == '__main__':
     env.reset()
     state_values = grid_world_state_values(env)
     print(state_values)
-    draw_image(np.round(state_values, decimals=2))
-    plt.savefig('images/grid_world_state_values.png')
-    plt.close()
+    draw_image(np.round(state_values, decimals=2), 'images/grid_world_state_values.png')
 
     print()
 
     env.reset()
     optimal_state_values = grid_world_optimal_values(env)
     print(optimal_state_values)
-    draw_image(np.round(optimal_state_values, decimals=2))
-    plt.savefig('images/grid_world_optimal_values.png')
-    plt.close()
+    draw_image(np.round(optimal_state_values, decimals=2), 'images/grid_world_optimal_values.png')

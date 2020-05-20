@@ -12,21 +12,28 @@ TERMINAL_STATES = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
 
 
 # 학습 이후의 가치함수를 표 형태로 그리는 함수
-def draw_image(image):
+def draw_image(values, filename):
+    state_values = np.zeros((GRID_HEIGHT, GRID_WIDTH))
+    for i in range(GRID_HEIGHT):
+        for j in range(GRID_WIDTH):
+            state_values[(i, j)] = values[(i, j)]
+
+    state_values = np.round(state_values, decimals=2)
+
     # 축 표시 제거, 크기 조절 등 이미지 그리기 이전 설정 작업
     fig, ax = plt.subplots()
     ax.set_axis_off()
     table = Table(ax, bbox=[0, 0, 1, 1])
 
-    nrows, ncols = image.shape
+    nrows, ncols = state_values.shape
     width, height = 1.0 / ncols, 1.0 / nrows
 
     # 렌더링 할 이미지에 표 셀과 해당 값 추가
-    for (i, j), val in np.ndenumerate(image):
+    for (i, j), val in np.ndenumerate(state_values):
         table.add_cell(i, j, width, height, text=val, loc='center', facecolor='white')
 
     # 행, 열 라벨 추가
-    for i in range(len(image)):
+    for i in range(len(state_values)):
         table.add_cell(i, -1, width, height, text=i+1, loc='right', edgecolor='none', facecolor='none')
         table.add_cell(-1, i, width, height/2, text=i+1, loc='center', edgecolor='none', facecolor='none')
 
@@ -34,6 +41,11 @@ def draw_image(image):
          cell.get_text().set_fontsize(20)
 
     ax.add_table(table)
+
+    print("!#@#232")
+    plt.savefig(filename)
+    plt.close()
+
 
 # 환경에서 무작위로 에피소드(현재 상태, 행동, 다음 상태, 보상)를 생성함
 def generate_random_episode(env):
@@ -48,16 +60,18 @@ def generate_random_episode(env):
     episode.append((initial_state, -1))
     visited_states.append(initial_state)
 
+    state = initial_state
     done = False
     while not done:
         # 상태에 관계없이 항상 4가지 행동 중 하나를 선택하여 수행
         action = random.randrange(env.action_space.num_actions)
 
-        state, reward, done, _ = env.step(action)
+        next_state, reward, done, _ = env.step(action)
 
-        if not done:
-            episode.append((state, reward))
-            visited_states.append(state)
+        episode.append((state, reward))
+        visited_states.append(state)
+
+        state = next_state
 
     return episode, visited_states
 
@@ -65,13 +79,12 @@ def generate_random_episode(env):
 # 첫 방문 행동 가치 MC 추정 함수
 def first_visit_mc_prediction(env, gamma, num_iter):
     # 비어있는 상태-가치 함수를 0으로 초기화하며 생성함
-    state_values = np.zeros((GRID_HEIGHT, GRID_WIDTH))
-
+    state_values = dict()
     returns = dict()
     for i in range(GRID_HEIGHT):
         for j in range(GRID_WIDTH):
-            state = (i, j)
-            returns[state] = list()
+            state_values[(i, j)] = 0.0
+            returns[(i, j)] = list()
 
     for i in range(num_iter):
         episode, visited_states = generate_random_episode(env)
@@ -95,13 +108,12 @@ def first_visit_mc_prediction(env, gamma, num_iter):
 # 모든 방문 행동 가치 MC 예측
 def every_visit_mc_prediction(env, gamma, num_iter):
     # 비어있는 상태-가치 함수를 0으로 초기화하며 생성함
-    state_values = np.zeros((GRID_HEIGHT, GRID_WIDTH))
-
+    state_values = dict()
     returns = dict()
     for i in range(GRID_HEIGHT):
         for j in range(GRID_WIDTH):
-            state = (i, j)
-            returns[state] = list()
+            state_values[(i, j)] = 0.0
+            returns[(i, j)] = list()
 
     for i in range(num_iter):
         episode, _ = generate_random_episode(env)
@@ -139,14 +151,19 @@ if __name__ == "__main__":
     env.reset()
 
     values, returns = first_visit_mc_prediction(env, 1.0, 10000)
-    print(values)
-    draw_image(np.round(values, decimals=2))
-    plt.savefig('images/first_visit_mc_state_values.png')
-    plt.close()
+    print("First Visit")
+    for i in range(GRID_HEIGHT):
+        for j in range(GRID_WIDTH):
+            print("({0}, {1}): {2:5.2f}".format(i, j, values[i, j]))
+        print()
+    draw_image(values, 'images/first_visit_mc_state_values.png')
 
     print()
+
     values, returns = every_visit_mc_prediction(env, 1.0, 10000)
-    print(values)
-    draw_image(np.round(values, decimals=2))
-    plt.savefig('images/every_visit_mc_state_values.png')
-    plt.close()
+    print("Every Visit")
+    for i in range(GRID_HEIGHT):
+        for j in range(GRID_WIDTH):
+            print("({0}, {1}): {2:5.2f}".format(i, j, values[i, j]))
+        print()
+    draw_image(values, 'images/every_visit_mc_state_values.png')
