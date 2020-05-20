@@ -56,7 +56,7 @@ def draw_image(state_values, filename):
     axis.add_table(table)
 
     plt.savefig(filename, dpi=300)
-
+    plt.close()
 
 
 # GRID_WORLD 첫번째 예제

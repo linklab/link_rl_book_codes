@@ -42,7 +42,6 @@ def draw_image(values, filename):
 
     ax.add_table(table)
 
-    print("!#@#232")
     plt.savefig(filename)
     plt.close()
 
