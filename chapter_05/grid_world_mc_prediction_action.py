@@ -1,9 +1,6 @@
 # 사용 패키지 임포트
-import os
 import numpy as np
 import random
-import matplotlib.pyplot as plt
-from matplotlib.table import Table
 from environments.gridworld import GridWorld
 
 GRID_HEIGHT = 4

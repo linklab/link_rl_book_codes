@@ -27,21 +27,29 @@ class PolicyIteration:
         self.terminal_states = [(0, 0), (4, 4)]
 
         self.state_values = None
-        self.policy = np.empty([GRID_HEIGHT, GRID_WIDTH, self.env.action_space.num_actions])
-
-        for i in range(GRID_HEIGHT):
-            for j in range(GRID_WIDTH):
-                for action in self.env.action_space.ACTIONS:
-                    if (i, j) in TERMINAL_STATES:
-                        self.policy[i][j][action] = 0.00
-                    else:
-                        self.policy[i][j][action] = 0.25
+        self.policy = self.generate_random_policy()
 
         # 정책 평가
         self.delta = 0.0
 
         # 정책 평가의 역
         self.theta = 0.001
+
+    # 모든 상태에서 수행 가능한 행동에 맞춰 임의의 정책을 생성함
+    # 초기에 각 행동의 선택 확률은 모두 같음
+    def generate_random_policy(self):
+        policy = dict()
+
+        for i in range(GRID_HEIGHT):
+            for j in range(GRID_WIDTH):
+                actions = []
+                action_probs = []
+                for action in range(self.env.action_space.num_actions):
+                    actions.append(action)
+                    action_probs.append(0.25)
+                policy[(i, j)] = (actions, action_probs)
+
+        return policy
 
     # 정책 평가 함수
     def policy_evaluation(self):
@@ -62,9 +70,11 @@ class PolicyIteration:
                         for action in self.env.action_space.ACTIONS:
                             (next_i, next_j), reward, prob = env.get_state_action_probability(state=(i, j), action=action)
 
+                            _, action_probs = self.policy[(i, j)]
+
                             # Bellman-Equation, 벨만 방정식 적용
                             values.append(
-                                self.policy[i][j][action] * prob * (reward + DISCOUNT_RATE * old_state_values[next_i, next_j])
+                                action_probs[action] * prob * (reward + DISCOUNT_RATE * old_state_values[next_i, next_j])
                             )
 
                         state_values[i][j] = np.sum(values)
@@ -82,7 +92,7 @@ class PolicyIteration:
 
     # 정책 개선 함수
     def policy_improvement(self):
-        new_policy = np.empty([GRID_HEIGHT, GRID_WIDTH, self.env.action_space.num_actions])
+        new_policy = dict()
 
         is_policy_stable = True
 
@@ -90,19 +100,29 @@ class PolicyIteration:
         for i in range(GRID_HEIGHT):
             for j in range(GRID_WIDTH):
                 if (i, j) in TERMINAL_STATES:
-                    for action in self.env.action_space.ACTIONS:
-                        new_policy[i][j][action] = 0.0
+                    actions = []
+                    action_probs = []
+                    for action in range(self.env.action_space.num_actions):
+                        actions.append(action)
+                        action_probs.append(0.25)
+                    new_policy[(i, j)] = (actions, action_probs)
                 else:
+                    actions = []
                     q_func = []
                     for action in self.env.action_space.ACTIONS:
+                        actions.append(action)
                         (next_i, next_j), reward, prob = env.get_state_action_probability(state=(i, j), action=action)
                         q_func.append(
                             prob * (reward + DISCOUNT_RATE * self.state_values[next_i, next_j])
                         )
 
-                    new_policy[i][j] = softmax(q_func)
+                    new_policy[(i, j)] = (actions, softmax(q_func))
 
-        error = np.sum(np.absolute(self.policy - new_policy))
+        error = 0.0
+        for i in range(GRID_HEIGHT):
+            for j in range(GRID_WIDTH):
+                error += np.sum(np.absolute(np.array(self.policy[(i, j)][1]) - np.array(new_policy[(i, j)][1])))
+
         if error > THETA_2:
             is_policy_stable = False
 
@@ -154,5 +174,9 @@ if __name__ == '__main__':
 
     for i in range(GRID_HEIGHT):
         for j in range(GRID_WIDTH):
-            print(i, j, PI.policy[i][j])  # UP, DOWN, LEFT, RIGHT
+            print(
+                i, j,
+                ": UP, DOWN, LEFT, RIGHT",
+                PI.policy[(i, j)][1]
+            )
         print()

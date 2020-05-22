@@ -10,6 +10,7 @@ TERMINAL_STATES = [(0, 0), (GRID_HEIGHT - 1, GRID_WIDTH - 1)]
 DISCOUNT_RATE = 1.0
 THETA = 0.0001
 
+
 # 학습 이후의 가치함수를 표 형태로 그리는 함수
 def draw_image(state_values, filename):
     # 축 표시 제거, 크기 조절 등 이미지 그리기 이전 설정 작업

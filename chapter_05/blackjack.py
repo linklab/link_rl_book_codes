@@ -296,10 +296,10 @@ def mc_exploring_start():
               action_no_usable_ace,
               state_value_no_usable_ace]
 
-    titles = ['최적 정책 with usable Ace',
-              '최적 가치 with usable Ace',
-              '최적 정책 without usable Ace',
-              '최적 가치 without usable Ace']
+    titles = ['최적 정책, Usable Ace',
+              '최적 가치, Usable Ace',
+              '최적 정책, No Usable Ace',
+              '최적 가치, No Usable Ace']
 
     _, axes = plt.subplots(2, 2, figsize=(40, 30))
     plt.subplots_adjust(wspace=0.15, hspace=0.4)
@@ -312,7 +312,10 @@ def mc_exploring_start():
             cmap="YlGnBu",
             ax=axis,
             xticklabels=range(1, 11),
-            yticklabels=list(reversed(range(12, 22)))
+            yticklabels=list(reversed(range(12, 22))),
+            annot_kws={"size": 20},
+            vmin=-1.0,
+            vmax=1.0
         )
         fig.set_ylabel('플레이어 카드 숫자 합', fontsize=50)
         fig.set_xlabel('공개된 딜러 카드 숫자', fontsize=50)
@@ -396,6 +399,6 @@ def mc_off_policy():
 
 if __name__ == '__main__':
     # Monte-Carlo On-policy, 탐험적 시작, Off-policy
-    mc_prediction()
-    #mc_exploring_start()
+    # mc_prediction()
+    mc_exploring_start()
     #mc_off_policy()
