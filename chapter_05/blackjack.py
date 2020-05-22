@@ -203,6 +203,7 @@ def monte_carlo_on_policy(episodes):
 def monte_carlo_es(episodes):
     # 행동 가치 함수(플레이어 카드 총합, 공개된 딜러 카드, 에이스 카드 가용 여부, 행동)
     state_action_values = np.zeros((10, 10, 2, 2))
+
     # division by 0 에러를 막기 위해 1로 초기화
     state_action_pair_count = np.ones((10, 10, 2, 2))
 
@@ -219,9 +220,11 @@ def monte_carlo_es(episodes):
     # episodes번의 에피소드 반복
     for episode in tqdm(range(episodes)):
         # 에피소드 마다 초기 설정은 무작위로 정한다
-        initial_state = [bool(np.random.choice([0, 1])),
-                       np.random.choice(range(12, 22)),
-                       np.random.choice(range(1, 11))]
+        initial_state = [
+            bool(np.random.choice([0, 1])),
+            np.random.choice(range(12, 22)),
+            np.random.choice(range(1, 11))
+        ]
         initial_action = np.random.choice(ACTIONS)
         current_policy = behavior_policy if episode else target_policy_player   # episode = 0, 초기엔 타깃 정책 사용
         _, reward, trajectory = play_black_jack(current_policy, initial_state, initial_action)
@@ -389,7 +392,7 @@ def mc_off_policy():
     plt.plot(error_weighted_sampling, label='가중치 중요도 샘플링')
     plt.xlabel('애피소드 (log scale)')
     plt.ylabel('MSE (Mean square error)')
-    plt.ylim(-0.5, 5)
+    plt.ylim(-0.5, 7)
     plt.xscale('log')
     plt.legend()
 
@@ -399,6 +402,6 @@ def mc_off_policy():
 
 if __name__ == '__main__':
     # Monte-Carlo On-policy, 탐험적 시작, Off-policy
-    # mc_prediction()
-    mc_exploring_start()
-    #mc_off_policy()
+    #mc_prediction()
+    #mc_exploring_start()
+    mc_off_policy()

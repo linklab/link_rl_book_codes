@@ -1,5 +1,6 @@
 import numpy as np
 from environments.gridworld import GridWorld
+from utils.util import softmax
 
 GRID_HEIGHT = 4
 GRID_WIDTH = 4
@@ -10,12 +11,6 @@ THETA_2 = 0.0001
 
 MAX_EPISODES = 5000
 
-def softmax(a):
-    exp_a = np.exp(a)
-    sum_exp_a = np.sum(exp_a)
-    y = exp_a / sum_exp_a
-
-    return y
 
 # 정책 반복 클래스
 class PolicyIteration:
