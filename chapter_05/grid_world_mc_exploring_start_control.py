@@ -31,11 +31,11 @@ class MonteCarloControl:
                     self.state_action_values[((i, j), action)] = 0.0
                     self.returns[((i, j), action)] = list()
 
-        self.policy = self.generate_random_policy()
+        self.policy = self.generate_initial_random_policy()
 
     # 모든 상태에서 수행 가능한 행동에 맞춰 임의의 정책을 생성함
     # 초기에 각 행동의 선택 확률은 모두 같음
-    def generate_random_policy(self):
+    def generate_initial_random_policy(self):
         policy = dict()
 
         for i in range(GRID_HEIGHT):

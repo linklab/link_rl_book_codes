@@ -11,7 +11,7 @@ TERMINAL_STATES = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
 DISCOUNT_RATE = 1.0
 THETA_1 = 0.0001
 THETA_2 = 0.0001
-MAX_EPISODES = 300
+MAX_EPISODES = 1000
 
 EPSILON = 0.1
 
@@ -25,26 +25,33 @@ class SoftPolicyMonteCarloControl:
         self.terminal_states = [(0, 0), (4, 4)]
 
         # 비어있는 상태-가치 함수를 0으로 초기화하며 생성함₩
-        self.state_action_values = dict()
-        self.returns = dict()
+        self.state_action_values, self.returns = self.generate_initial_q_value_and_return()
+
+        self.policy = self.generate_initial_random_policy()
+
+    # 비어있는 행동 가치 함수를 0으로 초기화하며 생성함
+    def generate_initial_q_value_and_return(self):
+        state_action_values = dict()
+        returns = dict()
+
         for i in range(GRID_HEIGHT):
             for j in range(GRID_WIDTH):
                 for action in range(NUM_ACTIONS):
-                    self.state_action_values[((i, j), action)] = 0.0
-                    self.returns[((i, j), action)] = list()
+                    state_action_values[((i, j), action)] = 0.0
+                    returns[((i, j), action)] = list()
 
-        self.policy = self.generate_random_policy()
+        return state_action_values, returns
 
     # 모든 상태에서 수행 가능한 행동에 맞춰 임의의 정책을 생성함
     # 초기에 각 행동의 선택 확률은 모두 같음
-    def generate_random_policy(self):
+    def generate_initial_random_policy(self):
         policy = dict()
 
         for i in range(GRID_HEIGHT):
             for j in range(GRID_WIDTH):
                 actions = []
                 prob = []
-                for action in range(self.env.action_space.num_actions):
+                for action in range(NUM_ACTIONS):
                     actions.append(action)
                     prob.append(0.25)
                 policy[(i, j)] = (actions, prob)
@@ -66,9 +73,7 @@ class SoftPolicyMonteCarloControl:
         state = initial_state
 
         done = False
-        trajectory_size = 0
-        while trajectory_size < 10000 and not done:
-            trajectory_size += 1
+        while not done:
             actions, prob = self.policy[state]
             action = np.random.choice(actions, size=1, p=prob)[0]
             next_state, reward, done, _ = self.env.step(action)
@@ -103,34 +108,31 @@ class SoftPolicyMonteCarloControl:
 
         for i in range(GRID_HEIGHT):
             for j in range(GRID_WIDTH):
+                actions = []
+                action_probs = []
                 if (i, j) in TERMINAL_STATES:
-                    actions = []
-                    action_probs = []
-                    for action in range(self.env.action_space.num_actions):
+                    for action in range(NUM_ACTIONS):
                         actions.append(action)
                         action_probs.append(0.25)
                     new_policy[(i, j)] = (actions, action_probs)
                 else:
-                    actions = []
                     q_values = []
-                    for action in self.env.action_space.ACTIONS:
+                    for action in range(NUM_ACTIONS):
                         actions.append(action)
                         q_values.append(self.state_action_values[((i, j), action)])
 
                     max_prob_actions = np.where(np.array(q_values) == np.array(q_values).max())[0]
-                    probs = []
-                    for action in self.env.action_space.ACTIONS:
+                    for action in range(NUM_ACTIONS):
                         if action in max_prob_actions:
-                            probs.append(
+                            action_probs.append(
                                 (1 - EPSILON) / len(max_prob_actions) + EPSILON / NUM_ACTIONS
                             )
                         else:
-                            probs.append(
+                            action_probs.append(
                                 EPSILON / NUM_ACTIONS
                             )
-                    print(max_prob_actions, probs)
 
-                    new_policy[(i, j)] = (actions, probs)
+                    new_policy[(i, j)] = (actions, action_probs)
 
         error = 0.0
         for i in range(GRID_HEIGHT):
