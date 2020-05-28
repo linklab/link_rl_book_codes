@@ -175,8 +175,6 @@ class GridWorld(gym.Env):
     # take @action in @state
     # @return: (reward, new state)
     def step(self, action):
-        i, j = self.current_state
-
         next_i, next_j = self.get_next_state(state=self.current_state, action=action)
 
         reward = self.get_reward(self.current_state, (next_i, next_j))

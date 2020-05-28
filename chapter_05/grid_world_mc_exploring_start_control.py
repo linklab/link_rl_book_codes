@@ -49,15 +49,20 @@ class MonteCarloControl:
 
         return policy
 
+    def get_explorering_start_state(self):
+        while True:
+            i = random.randrange(GRID_HEIGHT)
+            j = random.randrange(GRID_WIDTH)
+            if (i, j) not in TERMINAL_STATES:
+                break
+        return (i, j)
+
     # 환경에서 무작위로 에피소드(현재 상태, 행동, 다음 상태, 보상)를 생성함
     def generate_random_episode(self):
         episode = []
         visited_state_actions = []
 
-        i = random.randrange(GRID_HEIGHT)
-        j = random.randrange(GRID_WIDTH)
-        initial_state = (i, j)
-
+        initial_state = self.get_explorering_start_state()
         self.env.moveto(initial_state)
         state = initial_state
 

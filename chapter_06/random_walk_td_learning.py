@@ -73,26 +73,25 @@ def temporal_difference(env, policy, state_values, alpha=0.1, batch=False):
 # @values: 현재의 상태 가치
 # @alpha: 스텝 사이즈
 # @batch: 배치 업데이트 유무
-def constant_alpha_monte_carlo(values, alpha=0.1, batch=False):
-    state = 3
-    trajectory = [state]
+def constant_alpha_monte_carlo(env, policy, values, alpha=0.1, batch=False):
+    env.reset()
+    trajectory = [env.current_state]
+    done = False
+    state = env.current_state
 
-    # 만약 T1에서 종료되면 누적 보상(또는 이득) returns 값은 0
-    # 만약 T2에서 종료되면 누적 보상(또는 이득) returns 값은 1
-    while True:
-        if np.random.binomial(n=1, p=0.5) == LEFT_ACTION:
-            state -= 1
-        else:
-            state += 1
+    returns = 0.0
+    while not done:
+        actions, prob = policy[state]
+        action = np.random.choice(actions, size=1, p=prob)[0]
+        next_state, reward, done, _ = env.step(action)
 
         trajectory.append(state)
 
-        if state == 6:
-            returns = 1.0
-            break
-        elif state == 0:
-            returns = 0.0
-            break
+        if done:
+            if next_state == 'T2':
+                returns = 1.0
+
+        state = next_state
 
     if batch:
         return trajectory, [returns] * (len(trajectory) - 1)
@@ -102,7 +101,7 @@ def constant_alpha_monte_carlo(values, alpha=0.1, batch=False):
             values[state_] += alpha * (returns - values[state_])
 
 
-# 실전 연습의 왼쪽 그래프
+# TD(0)를 활용한 상태 가치 추정
 def compute_state_values(env):
     policy = generate_initial_random_policy(env)
     episodes = [3, 10, 100]
@@ -122,17 +121,19 @@ def compute_state_values(env):
     plt.xlabel('상태')
     plt.ylabel('추정 가치')
     plt.legend()
-    plt.savefig('images/example_6_2_left.png')
+    plt.savefig('images/random_walk_td_prediction.png')
     plt.close()
 
 
-# Example 6.2 right
-def rms_errors():
+# TD(0)와 상스-alpha MC의 상태 가치 예측 성능 비교
+def rms_errors(env):
+    policy = generate_initial_random_policy(env)
+
     # Same alpha value can appear in both arrays
     td_alphas = [0.15, 0.1, 0.05, 0.025]
     mc_alphas = [0.01, 0.02, 0.03, 0.04]
-    total_runs = 100
-    episodes = 100 + 1
+    total_runs = 20
+    episodes = 200 + 1
     plt.figure()
 
     for i, alpha in enumerate(td_alphas + mc_alphas):
@@ -146,20 +147,21 @@ def rms_errors():
 
         for _ in tqdm(range(total_runs)):
             errors = []
-            V = np.copy(VALUES)
+            state_values = np.copy(VALUES)
             for i in range(episodes):
-                errors.append(np.sqrt(np.sum(np.power(TRUE_VALUE - V, 2)) / 7.0))
+                errors.append(np.sqrt(np.sum(np.power(TRUE_VALUE - state_values, 2)) / 7.0))
                 if method == 'TD(0)':
-                    temporal_difference(V, alpha=alpha)
+                    temporal_difference(env, policy, state_values, alpha=alpha)
                 else:
-                    constant_alpha_monte_carlo(V, alpha=alpha)
+                    constant_alpha_monte_carlo(env, policy, state_values, alpha=alpha)
             total_errors += np.asarray(errors)
         total_errors /= total_runs
         plt.plot(total_errors, linestyle=linestyle, label=method + ', alpha = {0:.2f}'.format(alpha))
+
     plt.xlabel('에피소드')
     plt.ylabel('RMS 에러')
     plt.legend()
-    plt.savefig('images/example_6_2_right.png')
+    plt.savefig('images/random_walk_rms_errors_comparison.png')
     plt.close()
 
 
@@ -236,7 +238,7 @@ def batch_updating_execution_alpha():
     plt.close()
 
 
-if __name__ == '__main__':
+def main():
     env = RandomWalk(
         num_internal_states=NUM_INTERNAL_STATES,
         transition_reward=0.0,
@@ -244,6 +246,11 @@ if __name__ == '__main__':
         right_terminal_reward=1.0
     )
     compute_state_values(env)
-    # rms_errors()
+    rms_errors(env)
     # batch_updating_execution_episode()
     # batch_updating_execution_alpha()
+
+
+if __name__ == '__main__':
+    main()
+

@@ -2,48 +2,21 @@
 import os
 import numpy as np
 import random
-import matplotlib.pyplot as plt
-from matplotlib.table import Table
 from environments.gridworld import GridWorld
+from utils.util import draw_grid_world_image
 
 GRID_HEIGHT = 4
 GRID_WIDTH = 4
 TERMINAL_STATES = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
 
 
-# 학습 이후의 가치함수를 표 형태로 그리는 함수
-def draw_image(values, filename):
-    state_values = np.zeros((GRID_HEIGHT, GRID_WIDTH))
-    for i in range(GRID_HEIGHT):
-        for j in range(GRID_WIDTH):
-            state_values[(i, j)] = values[(i, j)]
-
-    state_values = np.round(state_values, decimals=2)
-
-    # 축 표시 제거, 크기 조절 등 이미지 그리기 이전 설정 작업
-    fig, ax = plt.subplots()
-    ax.set_axis_off()
-    table = Table(ax, bbox=[0, 0, 1, 1])
-
-    nrows, ncols = state_values.shape
-    width, height = 1.0 / ncols, 1.0 / nrows
-
-    # 렌더링 할 이미지에 표 셀과 해당 값 추가
-    for (i, j), val in np.ndenumerate(state_values):
-        table.add_cell(i, j, width, height, text=val, loc='center', facecolor='white')
-
-    # 행, 열 라벨 추가
-    for i in range(len(state_values)):
-        table.add_cell(i, -1, width, height, text=i+1, loc='right', edgecolor='none', facecolor='none')
-        table.add_cell(-1, i, width, height/2, text=i+1, loc='center', edgecolor='none', facecolor='none')
-
-    for key, cell in table.get_celld().items():
-         cell.get_text().set_fontsize(20)
-
-    ax.add_table(table)
-
-    plt.savefig(filename)
-    plt.close()
+def get_explorering_start_state():
+    while True:
+        i = random.randrange(GRID_HEIGHT)
+        j = random.randrange(GRID_WIDTH)
+        if (i, j) not in TERMINAL_STATES:
+            break
+    return (i, j)
 
 
 # 환경에서 무작위로 에피소드(현재 상태, 행동, 다음 상태, 보상)를 생성함
@@ -51,9 +24,7 @@ def generate_random_episode(env):
     episode = []
     visited_states = []
 
-    i = random.randrange(GRID_HEIGHT)
-    j = random.randrange(GRID_WIDTH)
-    initial_state = (i, j)
+    initial_state = get_explorering_start_state()
     env.moveto(initial_state)
 
     episode.append((initial_state, -1))
@@ -132,7 +103,7 @@ def every_visit_mc_prediction(env, gamma, num_iter):
     return state_values, returns
 
 
-if __name__ == "__main__":
+def main():
     # 이미지 저장 경로 확인 및 생성
     if not os.path.exists('images/'):
         os.makedirs('images/')
@@ -155,8 +126,8 @@ if __name__ == "__main__":
         for j in range(GRID_WIDTH):
             print("({0}, {1}): {2:5.2f}".format(i, j, values[i, j]))
         print()
-    draw_image(values, 'images/first_visit_mc_state_values.png')
 
+    draw_grid_world_image(values, 'images/first_visit_mc_state_values.png', GRID_HEIGHT, GRID_WIDTH)
     print()
 
     values, returns = every_visit_mc_prediction(env, 1.0, 10000)
@@ -165,4 +136,9 @@ if __name__ == "__main__":
         for j in range(GRID_WIDTH):
             print("({0}, {1}): {2:5.2f}".format(i, j, values[i, j]))
         print()
-    draw_image(values, 'images/every_visit_mc_state_values.png')
+
+    draw_grid_world_image(values, 'images/every_visit_mc_state_values.png', GRID_HEIGHT, GRID_WIDTH)
+
+
+if __name__ == "__main__":
+    main()

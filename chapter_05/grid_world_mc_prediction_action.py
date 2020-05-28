@@ -9,14 +9,21 @@ NUM_ACTIONS = 4
 TERMINAL_STATES = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
 
 
+def get_explorering_start_state():
+    while True:
+        i = random.randrange(GRID_HEIGHT)
+        j = random.randrange(GRID_WIDTH)
+        if (i, j) not in TERMINAL_STATES:
+            break
+    return (i, j)
+
+
 # 환경에서 무작위로 에피소드(현재 상태, 행동, 다음 상태, 보상)를 생성함
 def generate_random_episode(env):
     episode = []
     visited_state_actions = []
 
-    i = random.randrange(GRID_HEIGHT)
-    j = random.randrange(GRID_WIDTH)
-    initial_state = (i, j)
+    initial_state = get_explorering_start_state()
     env.moveto(initial_state)
 
     state = initial_state
@@ -93,8 +100,7 @@ def every_visit_mc_prediction(env, gamma, num_iter):
 
     return state_action_values, returns
 
-
-if __name__ == "__main__":
+def main():
     # 그리드 월드 환경 객체 생성
     env = GridWorld(
         height=GRID_HEIGHT,
@@ -134,3 +140,7 @@ if __name__ == "__main__":
         print()
 
     print()
+
+
+if __name__ == "__main__":
+    main()
