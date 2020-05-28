@@ -3,56 +3,67 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
+from environments.randomwalk import RandomWalk
+
 plt.rcParams["font.family"] = 'NanumBarunGothic'
 plt.rcParams["font.size"] = 12
 mpl.rcParams['axes.unicode_minus'] = False
 
+NUM_INTERNAL_STATES = 5
+
 # 0: 왼쪽 종료 상태 T1를 나타냄, 상태 가치는 0.0으로 변하지 않음
 # 6: 오른쪽 종료 상태 T2를 나타냄, 상태 가치는 1.0으로 변하지 않음
 # 1부터 5는 각각 차례로 상태 A부터 상태 E를 나타냄, 각 상태 가치는 0.5로 초기화됨
-VALUES = np.zeros(7)
-VALUES[0] = 0.0
-VALUES[6] = 1.0
-VALUES[1:6] = 0.5
+VALUES = np.zeros(NUM_INTERNAL_STATES)
 
 # 올바른 상태 가치 값 저장
-TRUE_VALUE = np.zeros(7)
-TRUE_VALUE[0] = 0.0
-TRUE_VALUE[6] = 1.0
-TRUE_VALUE[1:6] = np.arange(1, 6) / 6.0
+TRUE_VALUE = np.zeros(NUM_INTERNAL_STATES)
+TRUE_VALUE[0:5] = np.arange(1, 6) / 6.0
 
 # 종료 상태를 제외한 임의의 상태에서 동일한 확률로 왼쪽 이동 또는 오른쪽 이동
 LEFT_ACTION = 0
 RIGHT_ACTION = 1
 
+# 모든 상태에서 수행 가능한 행동에 맞춰 임의의 정책을 생성함
+# 초기에 각 행동의 선택 확률은 모두 같음
+def generate_initial_random_policy(env):
+    policy = dict()
+
+    for state in env.observation_space.STATES:
+        actions = []
+        prob = []
+        for action in range(env.action_space.num_actions):
+            actions.append(action)
+            prob.append(0.5)
+        policy[state] = (actions, prob)
+
+    return policy
+
 
 # @values: 현재의 상태 가치
 # @alpha: 스텝 사이즈
 # @batch: 배치 업데이트 유무
-def temporal_difference(values, alpha=0.1, batch=False):
-    state = 3
-    trajectory = [state]
+def temporal_difference(env, policy, state_values, alpha=0.1, batch=False):
+    env.reset()
+    trajectory = [env.current_state]
     rewards = [0]
-    while True:
-        old_state = state
-
-        # np.random.binomial의 첫번째 인수 n은 시행 횟수를 의미, n=1 이므로 1개의 값이 샘플링됨
-        if np.random.binomial(n=1, p=0.5) == LEFT_ACTION:
-            state -= 1
-        else:
-            state += 1
-
-        # 일단 모든 보상은 0으로 설정됨
-        reward = 0
-        trajectory.append(state)
+    done = False
+    state = env.current_state
+    while not done:
+        actions, prob = policy[state]
+        action = np.random.choice(actions, size=1, p=prob)[0]
+        next_state, reward, done, _ = env.step(action)
 
         # TD 갱신 수행
         if not batch:
-            values[old_state] += alpha * (reward + values[state] - values[old_state])
+            if done:
+                state_values[state] += alpha * (reward - state_values[state])
+            else:
+                state_values[state] += alpha * (reward + state_values[next_state] - state_values[state])
 
-        if state == 6 or state == 0:
-            break
+        state = next_state
 
+        trajectory.append(state)
         rewards.append(reward)
 
     if batch:
@@ -92,20 +103,21 @@ def constant_alpha_monte_carlo(values, alpha=0.1, batch=False):
 
 
 # 실전 연습의 왼쪽 그래프
-def compute_state_values():
-    episodes = [0, 1, 10, 100]
+def compute_state_values(env):
+    policy = generate_initial_random_policy(env)
+    episodes = [3, 10, 100]
     markers = ['o', '+', 'D']
     plt.figure()
-    V = np.copy(VALUES)
-    plt.plot(['T1', 'A', 'B', 'C', 'D', 'E', 'T2'], V, label='초기 가치', linestyle=":")
+    state_values = VALUES
+    plt.plot(['A', 'B', 'C', 'D', 'E'], state_values, label='초기 가치', linestyle=":")
 
-    for i in range(1, len(episodes)):
-        V = np.copy(VALUES)
+    for i in range(len(episodes)):
+        state_values = VALUES.copy()
         for _ in range(episodes[i]):
-            temporal_difference(V)
-        plt.plot(['T1', 'A', 'B', 'C', 'D', 'E', 'T2'], V, label=str(episodes[i]) + ' 에피소드', marker=markers[i-1])
+            temporal_difference(env, policy, state_values)
+        plt.plot(['A', 'B', 'C', 'D', 'E'], state_values, label=str(episodes[i]) + ' 에피소드', marker=markers[i-1])
 
-    plt.plot(['T1', 'A', 'B', 'C', 'D', 'E', 'T2'], TRUE_VALUE, label='올바른 가치', linestyle="--")
+    plt.plot(['A', 'B', 'C', 'D', 'E'], TRUE_VALUE, label='올바른 가치', linestyle="--")
 
     plt.xlabel('상태')
     plt.ylabel('추정 가치')
@@ -225,7 +237,13 @@ def batch_updating_execution_alpha():
 
 
 if __name__ == '__main__':
-    # compute_state_values()
+    env = RandomWalk(
+        num_internal_states=NUM_INTERNAL_STATES,
+        transition_reward=0.0,
+        left_terminal_reward=0.0,
+        right_terminal_reward=1.0
+    )
+    compute_state_values(env)
     # rms_errors()
     # batch_updating_execution_episode()
-    batch_updating_execution_alpha()
+    # batch_updating_execution_alpha()
