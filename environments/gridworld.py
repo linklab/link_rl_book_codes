@@ -21,7 +21,7 @@ class GridWorld(gym.Env):
             transition_reward=0.0,
             terminal_reward=1.0,
             outward_reward=-1.0,
-            warmhole_states=None
+            warm_hole_states=None
     ):
         self.__version__ = "0.0.1"
 
@@ -72,7 +72,7 @@ class GridWorld(gym.Env):
         self.terminal_reward = terminal_reward
         self.outward_reward = outward_reward
 
-        self.warmhole_states = warmhole_states
+        self.warm_hole_states = warm_hole_states
         self.current_state = None
 
     def reset(self):
@@ -82,39 +82,39 @@ class GridWorld(gym.Env):
     def moveto(self, state):
         self.current_state = state
 
-    def is_warmhole_state(self, state):
+    def is_warm_hole_state(self, state):
         i, j = state
 
-        if self.warmhole_states is not None and len(self.warmhole_states) > 0:
-            for warmhole_info in self.warmhole_states:
-                warmhole_state = warmhole_info[0]
-                if i == warmhole_state[0] and j == warmhole_state[1]:
+        if self.warm_hole_states is not None and len(self.warm_hole_states) > 0:
+            for warm_hole_info in self.warm_hole_states:
+                warm_hole_state = warm_hole_info[0]
+                if i == warm_hole_state[0] and j == warm_hole_state[1]:
                     return True
         return False
 
-    def get_next_state_warmhole(self, state):
+    def get_next_state_warm_hole(self, state):
         i, j = state
         next_state = None
 
-        for warmhole_info in self.warmhole_states:
-            warmhole_state = warmhole_info[0]
-            warmhole_prime_state = warmhole_info[1]
+        for warm_hole_info in self.warm_hole_states:
+            warm_hole_state = warm_hole_info[0]
+            warm_hole_prime_state = warm_hole_info[1]
 
-            if i == warmhole_state[0] and j == warmhole_state[1]:
-                next_state = warmhole_prime_state
+            if i == warm_hole_state[0] and j == warm_hole_state[1]:
+                next_state = warm_hole_prime_state
                 break
         return next_state
 
-    def get_reward_warmhole(self, state):
+    def get_reward_warm_hole(self, state):
         i, j = state
         reward = None
 
-        for warmhole_info in self.warmhole_states:
-            warmhole_state = warmhole_info[0]
-            warmhole_reward = warmhole_info[2]
+        for warm_hole_info in self.warm_hole_states:
+            warm_hole_state = warm_hole_info[0]
+            warm_hole_reward = warm_hole_info[2]
 
-            if i == warmhole_state[0] and j == warmhole_state[1]:
-                reward = warmhole_reward
+            if i == warm_hole_state[0] and j == warm_hole_state[1]:
+                reward = warm_hole_reward
                 break
 
         return reward
@@ -122,8 +122,8 @@ class GridWorld(gym.Env):
     def get_next_state(self, state, action):
         i, j = state
 
-        if self.is_warmhole_state(state):
-            next_state = self.get_next_state_warmhole(state)
+        if self.is_warm_hole_state(state):
+            next_state = self.get_next_state_warm_hole(state)
             next_i = next_state[0]
             next_j = next_state[1]
         elif (i, j) in self.observation_space.TERMINAL_STATES:
@@ -151,8 +151,8 @@ class GridWorld(gym.Env):
         i, j = state
         next_i, next_j = next_state
 
-        if self.is_warmhole_state(state):
-            reward = self.get_reward_warmhole(state)
+        if self.is_warm_hole_state(state):
+            reward = self.get_reward_warm_hole(state)
         else:
             if (next_i, next_j) in self.observation_space.TERMINAL_STATES:
                 reward = self.terminal_reward

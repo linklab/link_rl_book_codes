@@ -113,7 +113,7 @@ if __name__ == '__main__':
         terminal_state=[],
         transition_reward=0,
         outward_reward=-1.0,
-        warmhole_states=[(A_POSITION, A_PRIME_POSITION, 10.0), (B_POSITION, B_PRIME_POSITION, 5.0)]
+        warm_hole_states=[(A_POSITION, A_PRIME_POSITION, 10.0), (B_POSITION, B_PRIME_POSITION, 5.0)]
     )
 
     env.reset()
