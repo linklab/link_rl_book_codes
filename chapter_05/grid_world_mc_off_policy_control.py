@@ -9,12 +9,7 @@ GRID_WIDTH = 4
 NUM_ACTIONS = 4
 TERMINAL_STATES = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
 DISCOUNT_RATE = 1.0
-THETA_1 = 0.0001
-THETA_2 = 0.0001
 MAX_EPISODES = 1000
-
-EPSILON = 0.1
-
 
 class OffPolicyMonteCarloControl:
     def __init__(self, env):
@@ -78,7 +73,7 @@ class OffPolicyMonteCarloControl:
         return behavior_policy
 
     # 환경에서 행위 정책을 통해 에피소드(현재 상태, 행동, 다음 상태, 보상)를 생성함
-    def generate_random_episode(self, behavior_policy):
+    def generate_episode(self, behavior_policy):
         episode = []
         visited_state_actions = []
 
@@ -142,7 +137,7 @@ class OffPolicyMonteCarloControl:
             behavior_policy = self.generate_any_policy()
 
             print("*** 에피소드 생성 ***")
-            episode, _ = self.generate_random_episode(behavior_policy)
+            episode, _ = self.generate_episode(behavior_policy)
 
             print("*** MC 예측 및 제어 수행 ***")
             self.every_visit_mc_prediction_and_control(episode, behavior_policy)
@@ -170,16 +165,15 @@ def main():
     MC = OffPolicyMonteCarloControl(env)
     MC.off_policy_control()
 
-    np.set_printoptions(suppress=True)
-
-    for i in range(GRID_HEIGHT):
-        for j in range(GRID_WIDTH):
-            print(
-                i, j,
-                ": UP, DOWN, LEFT, RIGHT",
-                MC.target_policy[(i, j)][1]
-            )
-        print()
+    with np.printoptions(precision=2, suppress=True):
+        for i in range(GRID_HEIGHT):
+            for j in range(GRID_WIDTH):
+                print(
+                    i, j,
+                    ": UP, DOWN, LEFT, RIGHT",
+                    MC.target_policy[(i, j)][1]
+                )
+            print()
 
 
 if __name__ == "__main__":

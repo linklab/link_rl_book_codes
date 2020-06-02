@@ -57,7 +57,7 @@ class MonteCarloControl:
                 break
         return (i, j)
 
-    # 환경에서 무작위로 에피소드(현재 상태, 행동, 다음 상태, 보상)를 생성함
+    # 환경에서 현재 정책에 입각하여 에피소드(현재 상태, 행동, 다음 상태, 보상) 생성
     def generate_random_episode(self):
         episode = []
         visited_state_actions = []
@@ -174,16 +174,15 @@ def main():
     MC = MonteCarloControl(env)
     MC.exploring_start_control()
 
-    np.set_printoptions(suppress=True)
-
-    for i in range(GRID_HEIGHT):
-        for j in range(GRID_WIDTH):
-            print(
-                i, j,
-                ": UP, DOWN, LEFT, RIGHT",
-                MC.policy[(i, j)][1]
-            )
-        print()
+    with np.printoptions(precision=2, suppress=True):
+        for i in range(GRID_HEIGHT):
+            for j in range(GRID_WIDTH):
+                print(
+                    i, j,
+                    ": UP, DOWN, LEFT, RIGHT",
+                    MC.policy[(i, j)][1]
+                )
+            print()
 
 
 if __name__ == "__main__":

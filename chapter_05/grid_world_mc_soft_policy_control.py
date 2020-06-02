@@ -58,15 +58,12 @@ class SoftPolicyMonteCarloControl:
 
         return policy
 
-    # 환경에서 무작위로 에피소드(현재 상태, 행동, 다음 상태, 보상)를 생성함
-    def generate_random_episode(self):
+    # 환경에서 현재 정책에 입각하여 에피소드(현재 상태, 행동, 다음 상태, 보상) 생성
+    def generate_episode(self):
         episode = []
         visited_state_actions = []
 
-        # i = random.randrange(GRID_HEIGHT)
-        # j = random.randrange(GRID_WIDTH)
-        # initial_state = (i, j)
-
+        # 초기 상태 고정
         initial_state = (1, 1)
 
         self.env.moveto(initial_state)
@@ -159,7 +156,7 @@ class SoftPolicyMonteCarloControl:
             iter_num += 1
 
             print("*** 에피소드 생성 ***")
-            episode, visited_state_actions = self.generate_random_episode()
+            episode, visited_state_actions = self.generate_episode()
 
             print("*** MC 예측 수행 ***")
             self.first_visit_mc_prediction(episode, visited_state_actions)
@@ -188,16 +185,15 @@ def main():
     MC = SoftPolicyMonteCarloControl(env)
     MC.soft_policy_control()
 
-    np.set_printoptions(suppress=True)
-
-    for i in range(GRID_HEIGHT):
-        for j in range(GRID_WIDTH):
-            print(
-                i, j,
-                ": UP, DOWN, LEFT, RIGHT",
-                MC.policy[(i, j)][1]
-            )
-        print()
+    with np.printoptions(precision=2, suppress=True):
+        for i in range(GRID_HEIGHT):
+            for j in range(GRID_WIDTH):
+                print(
+                    i, j,
+                    ": UP, DOWN, LEFT, RIGHT",
+                    MC.policy[(i, j)][1]
+                )
+            print()
 
 
 if __name__ == "__main__":
