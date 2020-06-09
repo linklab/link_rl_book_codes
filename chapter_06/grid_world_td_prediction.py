@@ -96,6 +96,17 @@ def compute_state_values(env):
 
     draw_grid_world_image(state_values, 'images/grid_world_td_prediction_3000.png', GRID_HEIGHT, GRID_WIDTH)
 
+    state_values = dict()
+    for i in range(GRID_HEIGHT):
+        for j in range(GRID_WIDTH):
+            state_values[(i, j)] = 0.0
+
+    num_episodes = 10000
+    for _ in range(num_episodes):
+        temporal_difference(env, policy, state_values)
+
+    draw_grid_world_image(state_values, 'images/grid_world_td_prediction_10000.png', GRID_HEIGHT, GRID_WIDTH)
+
 
 if __name__ == '__main__':
     env = GridWorld(

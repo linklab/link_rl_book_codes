@@ -11,7 +11,7 @@ DISCOUNT_RATE = 1.0
 MAX_EPISODES = 1000
 
 
-class OffPolicyMonteCarloControl:
+class OffPolicyMonteCarloPrediction:
     def __init__(self, env):
         self.env = env
 
@@ -100,36 +100,24 @@ class OffPolicyMonteCarloControl:
         return episode, visited_state_actions
 
     # 첫 방문 행동 가치 MC 추정 함수
-    def every_visit_mc_prediction_and_control(self, episode, behavior_policy):
+    def every_visit_mc_prediction(self, episode, behavior_policy):
         G = 0
         W = 1
         for idx, ((state, action), reward) in enumerate(reversed(episode)):
             G = DISCOUNT_RATE * G + reward
             self.C[(state, action)] += W
             self.state_action_values[(state, action)] += (G - self.state_action_values[(state, action)]) * W / self.C[(state, action)]
-            self.generate_greedy_policy(state)
             if self.target_policy[state][1][action] == 0.0:
                 print(state, self.target_policy[state][1], action, idx, self.C[(state, action)])
                 break
             W = W * self.target_policy[state][1][action] / behavior_policy[state][1][action]
 
-    # 탐욕적인 정책을 생성함
-    def generate_greedy_policy(self, state):
-        actions = []
-        q_values = []
-        for action in range(NUM_ACTIONS):
-            actions.append(action)
-            q_values.append(self.state_action_values[(state, action)])
-
-        assert False if True in np.isnan(np.array(q_values)) else True, q_values
-
-        self.target_policy[state] = (actions, softmax(q_values))
 
     # 탐험적 시작 전략 기반의 몬테카를로 방법 함수
-    def off_policy_control(self):
+    def off_policy_prediction(self):
         iter_num = 0
 
-        print("[[[ Off-policy MC 제어 반복 시작! ]]]")
+        print("[[[ Off-policy MC 예측 시작! ]]]")
         while iter_num < self.max_iteration:
             iter_num += 1
 
@@ -139,14 +127,14 @@ class OffPolicyMonteCarloControl:
             print("*** 에피소드 생성 ***")
             episode, _ = self.generate_episode(behavior_policy)
 
-            print("*** MC 예측 및 제어 수행 ***")
-            self.every_visit_mc_prediction_and_control(episode, behavior_policy)
+            print("*** MC 예측 수행 ***")
+            self.every_visit_mc_prediction(episode, behavior_policy)
 
             print("*** 총 반복 수: {0} ***".format(iter_num))
 
             print()
 
-        print("[[[ MC 제어 반복 종료! ]]]\n\n")
+        print("[[[ MC 예 종료! ]]]\n\n")
 
 
 def main():
@@ -162,18 +150,20 @@ def main():
     )
     env.reset()
 
-    MC = OffPolicyMonteCarloControl(env)
-    MC.off_policy_control()
+    MC = OffPolicyMonteCarloPrediction(env)
+    MC.off_policy_prediction()
 
-    with np.printoptions(precision=2, suppress=True):
-        for i in range(GRID_HEIGHT):
-            for j in range(GRID_WIDTH):
-                print(
-                    i, j,
-                    ": UP, DOWN, LEFT, RIGHT",
-                    MC.target_policy[(i, j)][1]
-                )
-            print()
+    for i in range(GRID_HEIGHT):
+        for j in range(GRID_WIDTH):
+            print("({0}, {1}):".format(i, j))
+            for action in range(NUM_ACTIONS):
+                print("  Action {0}: {1:5.2f}".format(
+                    env.action_space.ACTION_SYMBOLS[action],
+                    MC.state_action_values[((i, j), action)]
+                ))
+        print()
+
+    print()
 
 
 if __name__ == "__main__":
