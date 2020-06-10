@@ -7,6 +7,7 @@ plt.rcParams["font.family"] = 'NanumBarunGothic'
 plt.rcParams["font.size"] = 12
 mpl.rcParams['axes.unicode_minus'] = False
 
+
 def softmax(x):
     B = np.exp(x - np.max(x))
     C = np.sum(B)
