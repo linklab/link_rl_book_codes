@@ -7,7 +7,7 @@ import heapq
 from copy import deepcopy
 import random
 
-from chapter_08.maze import Maze, ChangingMaze
+from environments.maze import Maze, ChangingMaze
 
 plt.rcParams["font.family"] = 'NanumBarunGothic'
 plt.rcParams["font.size"] = 12
@@ -409,6 +409,7 @@ def maze_dyna_q_2(dyna_maze):
 
     return rewards
 
+
 # 장애물 위치가 변하는 미로 환경에서의 Dyna-Q 및 Dyna-Q+ 성능 비교
 def changing_maze_dyna_q():
     # 장애물 구성 변경 미로 환경 구성
@@ -584,7 +585,7 @@ def example_8_4():
 
 
 if __name__ == '__main__':
-    #maze_dyna_q()
-    changing_maze_dyna_q()
-    shortcut_maze_dyna_q()
+    maze_dyna_q()
+    #changing_maze_dyna_q()
+    #shortcut_maze_dyna_q()
     # example_8_4()
