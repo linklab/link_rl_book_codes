@@ -226,19 +226,19 @@ def dyna_q(q_value, model, dyna_maze):
     return steps, rewards
 
 
-# play for an episode for prioritized sweeping algorithm
-# @q_value: state action pair values, will be updated
-# @model: model instance for planning
-# @dyna_maze: a dyna_maze instance containing all information about the environment
+# 하나의 에피소드에 대해서 우선순위 스위핑 알고리즘 수행
+# @q_value: 행동 가치 테이블, dyna_q 함수 수행 후 값이 갱신 됨
+# @model: 계획시 사용되는 환경 모델
+# @dyna_maze: 미로 환경
 # @DynaQParams: several params for the algorithm
 # @return: # of backups during this episode
 def prioritized_sweeping(q_value, model, dyna_maze):
     state = dyna_maze.START_STATE
 
-    # track the steps in this episode
+    # 에피소드 내에서의 스텝 수
     steps = 0
 
-    # track the backups in planning phase
+    # 계획 과정에서의 역갱신 횟수
     backups = 0
 
     while state not in dyna_maze.GOAL_STATES:
@@ -504,10 +504,10 @@ def check_path(q_values, dyna_maze):
     return True
 
 
-# Example 8.4, mazes with different resolution
-def example_8_4():
+# mazes with different resolution
+def prioritized_sweeping():
     # get the original 6 * 9 dyna_maze
-    original_maze = Maze()
+    dyna_maze = Maze()
 
     # set up the parameters for each algorithm
     DynaQParams.planning_steps = 5
@@ -531,42 +531,41 @@ def example_8_4():
     num_of_mazes = 5
 
     # build all the mazes
-    mazes = [original_maze.extend_maze(i) for i in range(1, num_of_mazes + 1)]
+    #mazes = [original_maze.extend_maze(i) for i in range(1, num_of_mazes + 1)]
     methods = [prioritized_sweeping, dyna_q]
 
     # My machine cannot afford too many runs...
     runs = 5
 
     # track the # of backups
-    backups = np.zeros((runs, 2, num_of_mazes))
+    backups = np.zeros((runs, 2))
 
     for run in range(0, runs):
         for i in range(0, len(method_names)):
-            for mazeIndex, dyna_maze in zip(range(0, len(mazes)), mazes):
-                print('run %d, %s, dyna_maze size %d' % (run, method_names[i], dyna_maze.WORLD_HEIGHT * dyna_maze.WORLD_WIDTH))
+            print('run %d, %s, dyna_maze size %d' % (run, method_names[i], dyna_maze.MAZE_HEIGHT * dyna_maze.MAZE_WIDTH))
 
-                # initialize the state action values
-                q_value = np.zeros(dyna_maze.q_size)
+            # initialize the state action values
+            q_value = np.zeros(dyna_maze.q_size)
 
-                # track steps / backups for each episode
-                steps = []
+            # track steps / backups for each episode
+            steps = []
 
-                # generate the model
-                model = models[i]()
+            # generate the model
+            model = models[i]()
 
-                # play for an episode
-                while True:
-                    steps.append(methods[i](q_value, model, dyna_maze, params[i]))
+            # play for an episode
+            while True:
+                steps.append(methods[i](q_value, model, dyna_maze))
 
-                    # print best actions w.r.t. current state-action values
-                    # printActions(currentStateActionValues, dyna_maze)
+                # print best actions w.r.t. current state-action values
+                # printActions(currentStateActionValues, dyna_maze)
 
-                    # check whether the (relaxed) optimal path is found
-                    if check_path(q_value, dyna_maze):
-                        break
+                # check whether the (relaxed) optimal path is found
+                if check_path(q_value, dyna_maze):
+                    break
 
-                # update the total steps / backups for this dyna_maze
-                backups[run, i, mazeIndex] = np.sum(steps)
+            # update the total steps / backups for this dyna_maze
+            backups[run, i] = np.sum(steps)
 
     backups = backups.mean(axis=0)
 
@@ -585,7 +584,7 @@ def example_8_4():
 
 
 if __name__ == '__main__':
-    maze_dyna_q()
+    #maze_dyna_q()
     #changing_maze_dyna_q()
     #shortcut_maze_dyna_q()
-    # example_8_4()
+    prioritized_sweeping()
