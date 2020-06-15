@@ -22,22 +22,23 @@ class PriorityQueue:
         self.counter = 0
 
     def add_item(self, item, priority=0):
-        if item in self.entry_finder:
-            self.remove_item(item)
-        entry = [priority, self.counter, item]
+        if tuple(item) in list(self.entry_finder.keys()):
+            self.remove_item(tuple(item))
+        entry = [priority, self.counter, tuple(item)]
         self.counter += 1
-        self.entry_finder[item] = entry
+
+        self.entry_finder[tuple(item)] = entry
         heapq.heappush(self.priority_queue, entry)
 
     def remove_item(self, item):
-        entry = self.entry_finder.pop(item)
+        entry = self.entry_finder.pop(tuple(item))
         entry[-1] = self.REMOVED
 
     def pop_item(self):
         while self.priority_queue:
             priority, count, item = heapq.heappop(self.priority_queue)
             if item is not self.REMOVED:
-                del self.entry_finder[item]
+                del self.entry_finder[tuple(item)]
                 return item, priority
         raise KeyError('pop from an empty priority queue')
 
@@ -72,8 +73,8 @@ class DynaQParams:
 
 
 # choose an action based on epsilon-greedy algorithm
-def choose_action(state, q_value, dyna_maze):
-    if np.random.binomial(1, DynaQParams.epsilon) == 1:
+def choose_action(state, q_value, dyna_maze, dyna_params):
+    if np.random.binomial(1, dyna_params.epsilon) == 1:
         return np.random.choice(dyna_maze.ACTIONS)
     else:
         values = q_value[state[0], state[1], :]
@@ -87,16 +88,19 @@ class SimpleModel:
 
     # 경험 샘플 저장
     def store(self, state, action, reward, next_state):
-        if state not in self.model:
-            self.model[state] = dict()
-        self.model[state][action] = [reward, next_state]
+        state = deepcopy(state)
+        next_state = deepcopy(next_state)
+        if tuple(state) not in list(self.model.keys()):
+            self.model[tuple(state)] = dict()
+
+        self.model[tuple(state)][action] = [reward, list(next_state)]
 
     # 저장해 둔 경험 샘플들에서 임으로 선택하여 반환험
     def sample(self):
         state = random.choice(list(self.model.keys()))
         action = random.choice(list(self.model[state].keys()))
         reward, next_state = self.model[state][action]
-        return state, action, reward, next_state
+        return list(state), action, reward, list(next_state)
 
 
 # Dyna-Q+를 위한 시간 기반 모델
@@ -113,8 +117,8 @@ class TimeModel:
 
     # 경험 샘플 저장
     def store(self, state, action, reward, next_state):
-        if state not in self.model:
-            self.model[state] = dict()
+        if tuple(state) not in self.model.keys():
+            self.model[tuple(state)] = dict()
 
             # 임의의 상태에 대하여 선택되어지지 않은 행동들에 대해서도
             # 계획 단계에 고려되도록 유도
@@ -122,9 +126,9 @@ class TimeModel:
                 if action_ != action:
                     # 그러한 행동들은 행동 수행 이후에 상태가 변동 없으며
                     # 보상은 0로 설정
-                    self.model[state][action_] = [0, state, 0]
+                    self.model[tuple(state)][action_] = [0, list(state), 0]
 
-        self.model[state][action] = [reward, next_state, self.time]
+        self.model[tuple(state)][action] = [reward, list(next_state), self.time]
         self.time += 1
 
     # 저장해 둔 경험 샘플들에서 임으로 선택하여 반환
@@ -142,48 +146,50 @@ class TimeModel:
         return state, action, reward, next_state
 
 
-# Model containing a priority queue for Prioritized Sweeping
+# 우선순위 스위핑을 위한 우선순위 큐를 포함한 환경 모델
 class PriorityModel(SimpleModel):
     def __init__(self):
         SimpleModel.__init__(self)
-        # maintain a priority queue
+        # 우선순위 큐
         self.priority_queue = PriorityQueue()
-        # track predecessors for every state
+        # 임의의 상태에 대한 선행 상태를 저장
         self.predecessors = dict()
 
-    # add a @state-@action pair into the priority queue with priority @priority
+    # (@state-@action) 쌍을 우선순위 큐에 삽입. 이 때 우선순위를 @priority로서 제공
     def insert(self, priority, state, action):
-        # note the priority queue is a minimum heap, so we use -priority
-        self.priority_queue.add_item((state, action), -priority)
+        # 기존의 우선순위 큐는 minimum heap이기 때문에, 우선순위의 부호를 변경하여 삽입
+        self.priority_queue.add_item((tuple(state), action), -priority)
 
-    # @return: whether the priority queue is empty
     def is_empty(self):
         return self.priority_queue.is_empty()
 
-    # get the first item in the priority queue
+    # 우선순위 큐에서 첫 번째 아이템을 가져옴
     def sample(self):
         (state, action), priority = self.priority_queue.pop_item()
-        next_state, reward = self.model[state][action]
+        reward, next_state = self.model[tuple(state)][action]
         state = deepcopy(state)
         next_state = deepcopy(next_state)
+
         return -priority, list(state), action, list(next_state), reward
 
-    # feed the model with previous experience
+    # 모델에 이전의 경험을 저장함
     def store(self, state, action, reward, next_state):
         state = deepcopy(state)
         next_state = deepcopy(next_state)
         SimpleModel.store(self, state, action, reward, next_state)
         if tuple(next_state) not in self.predecessors.keys():
             self.predecessors[tuple(next_state)] = set()
-        self.predecessors[tuple(next_state)].add((state, action))
+        self.predecessors[tuple(next_state)].add((tuple(state), action))
 
-    # get all seen predecessors of a state @state
+    # 임의의 상태에 대한 이전 상태를 모두 리턴함
     def predecessor(self, state):
-        if state not in self.predecessors.keys():
+        if tuple(state) not in list(self.predecessors.keys()):
             return []
         predecessors = []
-        for state_pre, action_pre in list(self.predecessors[state]):
-            predecessors.append([list(state_pre), action_pre, self.model[state_pre][action_pre][1]])
+        for state_pre, action_pre in list(self.predecessors[tuple(state)]):
+            predecessors.append(
+                [list(state_pre), action_pre, self.model[state_pre][action_pre][0]]
+            )
         return predecessors
 
 
@@ -191,7 +197,7 @@ class PriorityModel(SimpleModel):
 # @q_value: 행동 가치 테이블, dyna_q 함수 수행 후 값이 갱신 됨
 # @model: 계획시 사용할 모델
 # @dyna_maze: 미로 환경
-def dyna_q(q_value, model, dyna_maze):
+def dyna_q(q_value, model, dyna_maze, dyna_params):
     state = dyna_maze.START_STATE
     steps = 0
     rewards = 0.0
@@ -199,22 +205,22 @@ def dyna_q(q_value, model, dyna_maze):
         # 타임 스텝 기록
         steps += 1
         # 행동 얻어오기
-        action = choose_action(state, q_value, dyna_maze)
+        action = choose_action(state, q_value, dyna_maze, dyna_params)
         # 행동 수행후
         reward, next_state = dyna_maze.step(state, action)
 
         # Q-러닝 갱신
-        target = reward + DynaQParams.gamma * np.max(q_value[next_state[0], next_state[1], :])
-        q_value[state[0], state[1], action] += DynaQParams.alpha * (target - q_value[state[0], state[1], action])
+        target = reward + dyna_params.gamma * np.max(q_value[next_state[0], next_state[1], :])
+        q_value[state[0], state[1], action] += dyna_params.alpha * (target - q_value[state[0], state[1], action])
 
         # 경험 샘플을 모델에 저장 (모델 구성)
         model.store(state, action, reward, next_state)
 
         # 모델로 부터 샘플 얻어오면서 Q-계획 반복 수행
-        for t in range(0, DynaQParams.planning_steps):
+        for t in range(0, dyna_params.planning_steps):
             state_, action_, reward_, next_state_ = model.sample()
-            target = reward_ + DynaQParams.gamma * np.max(q_value[next_state_[0], next_state_[1], :])
-            q_value[state_[0], state_[1], action_] += DynaQParams.alpha * (target - q_value[state_[0], state_[1], action_])
+            target = reward_ + dyna_params.gamma * np.max(q_value[next_state_[0], next_state_[1], :])
+            q_value[state_[0], state_[1], action_] += dyna_params.alpha * (target - q_value[state_[0], state_[1], action_])
 
         state = next_state
         rewards += reward
@@ -232,7 +238,7 @@ def dyna_q(q_value, model, dyna_maze):
 # @dyna_maze: 미로 환경
 # @DynaQParams: several params for the algorithm
 # @return: # of backups during this episode
-def prioritized_sweeping(q_value, model, dyna_maze):
+def prioritized_sweeping(q_value, model, dyna_maze, dyna_params):
     state = dyna_maze.START_STATE
 
     # 에피소드 내에서의 스텝 수
@@ -245,7 +251,7 @@ def prioritized_sweeping(q_value, model, dyna_maze):
         steps += 1
 
         # get action
-        action = choose_action(state, q_value, dyna_maze)
+        action = choose_action(state, q_value, dyna_maze, dyna_params)
 
         # take action
         reward, next_state = dyna_maze.step(state, action)
@@ -254,10 +260,11 @@ def prioritized_sweeping(q_value, model, dyna_maze):
         model.store(state, action, reward, next_state)
 
         # get the priority for current state action pair
-        priority = np.abs(reward + DynaQParams.gamma * np.max(q_value[next_state[0], next_state[1], :]) -
-                          q_value[state[0], state[1], action])
+        priority = np.abs(
+            reward + dyna_params.gamma * np.max(q_value[next_state[0], next_state[1], :]) - q_value[state[0], state[1], action]
+        )
 
-        if priority > DynaQParams.theta:
+        if priority > dyna_params.theta:
             model.insert(priority, state, action)
 
         # start planning
@@ -265,20 +272,22 @@ def prioritized_sweeping(q_value, model, dyna_maze):
 
         # planning for several steps,
         # although keep planning until the priority queue becomes empty will converge much faster
-        while planning_step < DynaQParams.planning_steps and not model.empty():
+        while planning_step < dyna_params.planning_steps and not model.is_empty():
             # get a sample with highest priority from the model
             priority, state_, action_, next_state_, reward_ = model.sample()
 
             # update the state action value for the sample
-            delta = reward_ + DynaQParams.gamma * np.max(q_value[next_state_[0], next_state_[1], :]) - \
+            delta = reward_ + dyna_params.gamma * np.max(q_value[next_state_[0], next_state_[1], :]) - \
                     q_value[state_[0], state_[1], action_]
-            q_value[state_[0], state_[1], action_] += DynaQParams.alpha * delta
+
+            q_value[state_[0], state_[1], action_] += dyna_params.alpha * delta
 
             # deal with all the predecessors of the sample state
-            for state_pre, action_pre, reward_pre in model.predecessor(state_):
-                priority = np.abs(reward_pre + DynaQParams.gamma * np.max(q_value[state_[0], state_[1], :]) -
+            for state_pre, action_pre, reward_pre in model.predecessor(tuple(state_)):
+                priority = np.abs(reward_pre + dyna_params.gamma * np.max(q_value[state_[0], state_[1], :]) -
                                   q_value[state_pre[0], state_pre[1], action_pre])
-                if priority > DynaQParams.theta:
+
+                if priority > dyna_params.theta:
                     model.insert(priority, state_pre, action_pre)
             planning_step += 1
 
@@ -335,27 +344,28 @@ def draw_image(dyna_maze, q_value, run, planning_step, episode):
 
 def maze_dyna_q():
     dyna_maze = Maze() # 미로 환경 객체 구성
+    dyna_params = DynaQParams()
 
     episodes = 30
     planning_steps = [0, 3, 30]
     steps = np.zeros((len(planning_steps), episodes))
 
-    for run in tqdm(range(DynaQParams.runs)):
+    for run in tqdm(range(dyna_params.runs)):
         for i, planning_step in enumerate(planning_steps):
-            DynaQParams.planning_steps = planning_step
+            dyna_params.planning_steps = planning_step
             q_value = np.zeros(dyna_maze.q_size)
 
             # Dyna-Q를 위한 단순 모델 생성
             model = SimpleModel()
             for episode in range(episodes):
                 #print('run:', run, 'planning step:', planning_step, 'episode:', episode)
-                steps_, _ = dyna_q(q_value, model, dyna_maze)
+                steps_, _ = dyna_q(q_value, model, dyna_maze, dyna_params)
                 steps[i, episode] += steps_
                 if run == 0 and planning_step in [0, 30] and episode in [0, 1]:
                     draw_image(dyna_maze, q_value, run, planning_step, episode)
 
     # 총 수행 횟수에 대한 평균 값 산출
-    steps /= DynaQParams.runs
+    steps /= dyna_params.runs
 
     linestyles = ['-', '--', ':']
     for i in range(len(planning_steps)):
@@ -370,18 +380,18 @@ def maze_dyna_q():
 
 
 # @dyna_maze: a dyna_maze instance
-def maze_dyna_q_2(dyna_maze):
+def maze_dyna_q_2(dyna_maze, dyna_params):
     # 누적 보상을 기록하는 자료 구조
-    cumulative_rewards = np.zeros((DynaQParams.runs, len(DynaQParams.methods), dyna_maze.max_steps))
+    cumulative_rewards = np.zeros((dyna_params.runs, len(dyna_params.methods), dyna_maze.max_steps))
 
-    for run in tqdm(range(DynaQParams.runs)):
+    for run in tqdm(range(dyna_params.runs)):
         # 두 개의 모델 설정
-        models = [SimpleModel(), TimeModel(dyna_maze.ACTIONS, time_weight=DynaQParams.time_weight)]
+        models = [SimpleModel(), TimeModel(dyna_maze.ACTIONS, time_weight=dyna_params.time_weight)]
 
         # 두 개의 모델별 행동 가치 초기화
         q_values = [np.zeros(dyna_maze.q_size), np.zeros(dyna_maze.q_size)]
 
-        for method_idx in range(len(DynaQParams.methods)):
+        for method_idx in range(len(dyna_params.methods)):
             # print('run:', run, DynaQParams.methods[method_idx])
             # set old obstacles for the maze
             dyna_maze.obstacles = dyna_maze.original_obstacles
@@ -390,7 +400,9 @@ def maze_dyna_q_2(dyna_maze):
             last_steps = steps
             while steps < dyna_maze.max_steps:
                 # play for an episode
-                steps_, rewards = dyna_q(q_values[method_idx], models[method_idx], dyna_maze)
+                steps_, rewards = dyna_q(
+                    q_values[method_idx], models[method_idx], dyna_maze, dyna_params
+                )
                 steps += steps_
 
                 # update cumulative rewards
@@ -427,18 +439,19 @@ def changing_maze_dyna_q():
     changing_maze.obstacle_switch_time = 1500
 
     # 파라미터 설정
-    DynaQParams.alpha = 1.0
-    DynaQParams.planning_steps = 10
-    DynaQParams.runs = 10
+    dyna_params = DynaQParams()
+    dyna_params.alpha = 1.0
+    dyna_params.planning_steps = 10
+    dyna_params.runs = 10
 
     # 시간 기반 모델에 사용할 파라미터
-    DynaQParams.time_weight = 0.0001
+    dyna_params.time_weight = 0.0001
 
     # 훈련 후 누적 보상 획득
-    cumulative_rewards = maze_dyna_q_2(changing_maze)
+    cumulative_rewards = maze_dyna_q_2(changing_maze, dyna_params)
 
-    for i in range(len(DynaQParams.methods)):
-        plt.plot(cumulative_rewards[i, :], label=DynaQParams.methods[i])
+    for i in range(len(dyna_params.methods)):
+        plt.plot(cumulative_rewards[i, :], label=dyna_params.methods[i])
 
     plt.xlabel('누적 타임 스텝')
     plt.ylabel('누적 보상')
@@ -466,18 +479,19 @@ def shortcut_maze_dyna_q():
     shortcut_maze.obstacle_switch_time = 3000
 
     # 파라미터 설정
-    DynaQParams.alpha = 1.0
-    DynaQParams.planning_steps = 10
-    DynaQParams.runs = 10
+    dyna_params = DynaQParams()
+    dyna_params.alpha = 1.0
+    dyna_params.planning_steps = 10
+    dyna_params.runs = 10
 
     # 시간 기반 모델에 사용할 파라미터
-    DynaQParams.time_weight = 0.0001
+    dyna_params.time_weight = 0.0001
 
     # 훈련 후 누적 보상 획득
-    cumulative_rewards = maze_dyna_q_2(shortcut_maze)
+    cumulative_rewards = maze_dyna_q_2(shortcut_maze, dyna_params)
 
-    for i in range(len(DynaQParams.methods)):
-        plt.plot(cumulative_rewards[i, :], label=DynaQParams.methods[i])
+    for i in range(len(dyna_params.methods)):
+        plt.plot(cumulative_rewards[i, :], label=dyna_params.methods[i])
 
     plt.xlabel('누적 타임 스텝')
     plt.ylabel('누적 보상')
@@ -501,18 +515,20 @@ def check_path(q_values, dyna_maze):
         steps += 1
         if steps > max_steps:
             return False
+
     return True
 
 
 # mazes with different resolution
-def prioritized_sweeping():
-    # get the original 6 * 9 dyna_maze
+def prioritized_sweeping_maze_dyna_q():
+    # get the original 6 * 10 dyna_maze
     dyna_maze = Maze()
 
     # set up the parameters for each algorithm
-    DynaQParams.planning_steps = 5
-    DynaQParams.alpha = 0.5
-    DynaQParams.gamma = 0.95
+    dyna_params = DynaQParams()
+    dyna_params.planning_steps = 5
+    dyna_params.alpha = 0.5
+    dyna_params.gamma = 0.95
 
     params_prioritized = DynaQParams()
     params_prioritized.theta = 0.0001
@@ -520,18 +536,18 @@ def prioritized_sweeping():
     params_prioritized.alpha = 0.5
     params_prioritized.gamma = 0.95
 
-    params = [params_prioritized, DynaQParams]
+    params = [params_prioritized, dyna_params]
 
     # set up models for planning
     models = [PriorityModel, SimpleModel]
-    method_names = ['Prioritized Sweeping', 'Dyna-Q']
+    method_names = ['우선순위 스위핑', 'Dyna-Q']
 
     # due to limitation of my machine, I can only perform experiments for 5 mazes
     # assuming the 1st dyna_maze has w * h states, then k-th dyna_maze has w * h * k * k states
     num_of_mazes = 5
 
     # build all the mazes
-    #mazes = [original_maze.extend_maze(i) for i in range(1, num_of_mazes + 1)]
+    # mazes = [original_maze.extend_maze(i) for i in range(1, num_of_mazes + 1)]
     methods = [prioritized_sweeping, dyna_q]
 
     # My machine cannot afford too many runs...
@@ -542,7 +558,9 @@ def prioritized_sweeping():
 
     for run in range(0, runs):
         for i in range(0, len(method_names)):
-            print('run %d, %s, dyna_maze size %d' % (run, method_names[i], dyna_maze.MAZE_HEIGHT * dyna_maze.MAZE_WIDTH))
+            print('run %d, %s, dyna_maze size %d' % (
+                run, method_names[i], dyna_maze.MAZE_HEIGHT * dyna_maze.MAZE_WIDTH)
+            )
 
             # initialize the state action values
             q_value = np.zeros(dyna_maze.q_size)
@@ -555,7 +573,7 @@ def prioritized_sweeping():
 
             # play for an episode
             while True:
-                steps.append(methods[i](q_value, model, dyna_maze))
+                steps.append(methods[i](q_value, model, dyna_maze, params[i]))
 
                 # print best actions w.r.t. current state-action values
                 # printActions(currentStateActionValues, dyna_maze)
@@ -570,21 +588,23 @@ def prioritized_sweeping():
     backups = backups.mean(axis=0)
 
     # Dyna-Q performs several backups per step
-    backups[1, :] *= DynaQParams.planning_steps + 1
+    backups[:] *= dyna_params.planning_steps + 1
+
+    print(backups)
 
     for i in range(0, len(method_names)):
-        plt.plot(np.arange(1, num_of_mazes + 1), backups[i, :], label=method_names[i])
+        plt.plot(range(len(backups)), backups[:], label=method_names[i])
     plt.xlabel('dyna_maze resolution factor')
     plt.ylabel('backups until optimal solution')
     plt.yscale('log')
     plt.legend()
 
-    plt.savefig('images/example_8_4.png')
+    plt.savefig('images/prioritized_sweeping.png')
     plt.close()
 
 
 if __name__ == '__main__':
-    #maze_dyna_q()
-    #changing_maze_dyna_q()
-    #shortcut_maze_dyna_q()
-    prioritized_sweeping()
+    maze_dyna_q()
+    changing_maze_dyna_q()
+    shortcut_maze_dyna_q()
+    prioritized_sweeping_maze_dyna_q()

@@ -98,7 +98,7 @@ class ChangingMaze(Maze):
         new_maze.obstacles = []
         for state in self.obstacles:
             new_maze.obstacles.extend(self.extend_state(state, factor))
-        new_maze.q_size = (new_maze.MAZE_HEIGHT, new_maze.MAZE_WIDTH, len(new_maze.actions))
+        new_maze.q_size = (new_maze.MAZE_HEIGHT, new_maze.MAZE_WIDTH, len(new_maze.ACTIONS))
         new_maze.resolution = factor
         return new_maze
 
