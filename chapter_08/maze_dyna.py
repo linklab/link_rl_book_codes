@@ -593,7 +593,8 @@ def prioritized_sweeping_maze_dyna_q():
     print(backups)
 
     for i in range(0, len(method_names)):
-        plt.plot(range(len(backups)), backups[:], label=method_names[i])
+        plt.plot(range(len(backups)), backups, label=method_names[i])
+
     plt.xlabel('dyna_maze resolution factor')
     plt.ylabel('backups until optimal solution')
     plt.yscale('log')
@@ -604,7 +605,7 @@ def prioritized_sweeping_maze_dyna_q():
 
 
 if __name__ == '__main__':
-    maze_dyna_q()
-    changing_maze_dyna_q()
-    shortcut_maze_dyna_q()
+    # maze_dyna_q()
+    # changing_maze_dyna_q()
+    # shortcut_maze_dyna_q()
     prioritized_sweeping_maze_dyna_q()
