@@ -1,271 +1,206 @@
-# Import the necessary package
-
-import os
-import pickle
-
-import gym
-import random
-import torch
 import numpy as np
-from collections import deque
+import tensorflow as tf
+import tensorflow.keras.layers as kl
+import gym
+import os
+import datetime
+from gym import wrappers
 
-import matplotlib.pyplot as plt
-
-# Set up the environment
-env = gym.make('CartPole-v0')
-env.seed(0)
-print('State shape: {}'.format(env.observation_space.shape))
-print('Number of actions: {}'.format(env.action_space.n))
-
-# Model define
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-class QNetwork(nn.Module):
-        
-    def __init__(self, state_size, action_size, seed):
-        super(QNetwork, self).__init__()
-        self.seed = torch.manual_seed(seed)
-        
-        #fc1 8 -> 64
-        self.fc1 = nn.Linear(state_size, 32)
-        
-        #relu1
-        self.relu1 = nn.PReLU()
-        
-        #fc2 64 -> 64
-        self.fc2 = nn.Linear(32, 32)
-        
-        #relu2
-        self.relu2 = nn.PReLU()
-        
-        #fc3 64 -> action_size
-        self.fc3 = nn.Linear(32, action_size)
-        
-    def forward(self, state):
-        #input state: [bsz, 8]
-        
-        #fc1 8 -> 64
-        x = self.fc1(state)
-        
-        #relu1
-        x = self.relu1(x)
-        
-        #fc2 64 -> 64
-        x = self.fc2(x)
-        
-        #relu2
-        x = self.relu2(x)
-        
-        #fc3 64 -> action_size
-        x = self.fc3(x)
-        
-        return x
+print(tf.__version__)
 
 
-# Define agent
-import random
-import torch.optim as optim
+class MyModel(tf.keras.Model):
+    def __init__(self, num_features, num_actions):
+        super(MyModel, self).__init__()
+        self.input_layer = kl.InputLayer(input_shape=(num_features,))
+        self.hidden_layer_1 = kl.Dense(128, activation='relu')
+        self.hidden_layer_2 = kl.Dense(128, activation='relu')
+        self.output_layer = kl.Dense(
+            num_actions,
+            activation='linear'
+        )
 
-BUFFER_SIZE = int(100000) # replay buffer size
-BATCH_SIZE = 64           # minibatch size
-GAMMA = 0.99              # discount factor
-LR = 0.0005               # learning rate
-UPDATE_EVERY = 4          # how often to update the network
+    def forward(self, inputs):
+        z = self.input_layer(inputs)
+        z = self.hidden_layer_1(z)
+        z = self.hidden_layer_2(z)
+        output = self.output_layer(z)
+        return output
 
-class DQNAgent():
-    
-    def __init__(self, state_size, action_size, seed):
-        self.state_size = state_size
-        self.action_size = action_size
-        self.seed = random.seed(seed)
-        
-        # initialize Q-Network
-        self.qnetwork_local = QNetwork(state_size, action_size, seed).to(device)
-        self.qnetwork_target = QNetwork(state_size, action_size, seed).to(device)
-        self.optimizer = optim.Adam(self.qnetwork_local.parameters())
-        
-        # replay memory
-        self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, seed)
-        
-        # initialize time step
-        self.t_step = 0
-    
-    
-    def step(self, state, action, reward, next_state, done):
-        # save experience in replay memory
-        self.memory.add(state, action, reward, next_state, done)
-    
-        # Learn every UPDATE_EVERY time steps
-        self.t_step = (self.t_step + 1) % UPDATE_EVERY
-        if self.t_step == 0:
-            if len(self.memory) > BATCH_SIZE:
-                experiences = self.memory.sample()
-                self.learn(experiences, GAMMA)
-    
-    def act(self, state, eps=0.):
-        # single state to state tensor (batch size = 1)
-        state = torch.from_numpy(state).float().unsqueeze(0).to(device)
-        
-        # set eval mode for local QN 
-        self.qnetwork_local.eval()
-        
-        # predict state value with local QN
-        with torch.no_grad(): # no need to save the gradient value
-            action_values = self.qnetwork_local(state)
-        
-        # set the mode of local QN back to train
-        self.qnetwork_local.train()
-        
-        # e-greedy action selection
-        # return greedy action if prob > eps
-        if random.random() > eps:
-            return np.argmax(action_values.cpu().data.numpy())
-        
-        # return random action if prob <= eps
-        else:
-            return random.choice(np.arange(self.action_size))
-        
-    
-    def learn(self, experiences, gamma):
-        
-        # unpack epxeriences
-        states, actions, rewards, next_states, dones = experiences
-        
-        # define loss function: MSELoss
-        loss_function = torch.nn.MSELoss()
-        
-        # get max predicted Q values from target model
-        Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
-        
-        # compute Q targets from current states
-        Q_targets = rewards + gamma * Q_targets_next * (1-dones)
-        
-        # get expected Q values from local model
-        Q_expected = self.qnetwork_local(states).gather(1, actions)
-        
-        # compute loss
-        loss = loss_function(Q_expected, Q_targets)
-        
-        # minimise the loss
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-        
-        # update target network
-        self.target_update(self.qnetwork_local, self.qnetwork_target)
-    
-    def target_update(self, local_model, target_model):
-        for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
-            target_param.data.copy_(local_param.data)
 
-from collections import deque, namedtuple
-import random
+class Replay_Buffer:
+    def __init__(self, max_buffer_size):
+        self.transitions = {
+            'state': [], 'action': [], 'reward': [], 'next_state': [], 'done': []
+        }
+        self.max_buffer_size = max_buffer_size
+        self.current_buffer_size = 0
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    def get_batch(self, batch_size):
+        ids = np.random.randint(low=0, high=len(self.transitions['state']), size=batch_size)
+        states = np.asarray([self.transitions['state'][i] for i in ids])
+        actions = np.asarray([self.transitions['action'][i] for i in ids])
+        rewards = np.asarray([self.transitions['reward'][i] for i in ids])
+        next_states = np.asarray([self.transitions['next_state'][i] for i in ids])
+        dones = np.asarray([self.transitions['done'][i] for i in ids])
+        return states, actions, rewards, next_states, dones
 
-class ReplayBuffer:
-    
-    # initialize ReplayBuffer
-    def __init__(self, action_size, buffer_size, batch_size, seed):
-        self.action_size = action_size
-        self.memory = deque(maxlen=buffer_size)
+    def add_transition(self, transition):
+        if self.current_buffer_size >= self.max_buffer_size:
+            for key in self.transitions.keys():
+                self.transitions[key].pop(0)
+
+            self.current_buffer_size -= 1
+
+        for key, value in transition.items():
+            self.transitions[key].append(value)
+
+        self.current_buffer_size += 1
+
+
+class DQN:
+    def __init__(self, num_features, num_actions, gamma, max_buffer_size, train_min_buffer_size, batch_size, learning_rate):
+        self.num_actions = num_actions
         self.batch_size = batch_size
-        self.experience = namedtuple("Experience", field_names=["state", 
-                                                                "action", 
-                                                                "reward", 
-                                                                "next_state", 
-                                                                "done"])
-        self.seed = random.seed(seed)
-    
-    # add a new experience to memory
-    def add(self, state, action, reward, next_state, done):
-        e = self.experience(state, action, reward, next_state, done)
-        self.memory.append(e)
-    
-    # randomly sample a batch of experiences from memory
-    def sample(self):
-        experiences = random.sample(self.memory, k=self.batch_size)
-        
-        states = torch.from_numpy(np.vstack([e.state for e in experiences if e is not None])).float().to(device)
-        actions = torch.from_numpy(np.vstack([e.action for e in experiences if e is not None])).long().to(device)
-        rewards = torch.from_numpy(np.vstack([e.reward for e in experiences if e is not None])).float().to(device)
-        next_states = torch.from_numpy(np.vstack([e.next_state for e in experiences if e is not None])).float().to(device)
-        dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float().to(device)
-        
-        return (states, actions, rewards, next_states, dones)
-    
-    # return the size of the internal memory
-    def __len__(self):
-        return len(self.memory)
+        self.optimizer = tf.optimizers.Adam(learning_rate)
+        self.gamma = gamma
+        self.model = MyModel(num_features, num_actions)
 
-# Train agent
-from collections import deque
+        self.max_buffer_size = max_buffer_size
+        self.train_min_buffer_size = train_min_buffer_size
+        self.replay_buffer = Replay_Buffer(self.max_buffer_size)
 
-def dqn(agent, n_episodes=2000, max_t=200, eps_start=1.0, eps_end=0.01, eps_decay=0.995, fname="dqn"):
-    
-    output_path = "outputs/{}".format(fname)
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-    
-    scores = [] # list containing scores from each episode
-    scores_window = deque(maxlen=10) # last 100 scores
-    eps = eps_start # initialize epsilon
-    save_score_threshold = 200
-    
-    # for every episode..
-    for i_episode in range(1, n_episodes + 1):
-        
-        # reset state
-        state = env.reset()
-        
-        # reset score to 0
-        score = 0
-        
-        # for every time step until max_t
-        for t in range(max_t):
-            
-            # get action based on e-greedy policy
-            action = agent.act(state, eps)
-            
-            # execute the chosen action
-            next_state, reward, done, _ = env.step(action)
-            
-            # update the network with experience replay
-            agent.step(state, action, reward, next_state, done)
-            
-            # set next_state as the new state
-            state = next_state
-            
-            # add reward to the score
-            score += reward
-            
-            # if the agent has reached the terminal state, break the loop
-            if done:
-                break
-        
-        # append the episode score to the deque
-        scores_window.append(score)
-        
-        # append the episode score to the list
-        scores.append(score)
-        
-        # decrease episilon
-        eps = max(eps_end, eps_decay * eps)
-        
-        # display metrics
-        print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)), end="")
-        if i_episode % 100 == 0:
-            print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
-        
-        # save model if the latest average score is higher than 200.0
-        if np.mean(scores_window) >= save_score_threshold:
-            print('\nEnvironment solved in {:d} episodes! \tAverage Score: {:.2f}'.format(i_episode-10, np.mean(scores_window)))
-            print('Finish the DDQN agent train!')
+    def predict(self, inputs):
+        return self.model.forward(np.atleast_2d(inputs.astype('float32')))
+
+    def train(self, target_q_net):
+        if self.replay_buffer.current_buffer_size < self.train_min_buffer_size:
+            return 0
+
+        states, actions, rewards, next_states, dones = self.replay_buffer.get_batch(self.batch_size)
+        value_next_states = np.max(target_q_net.predict(next_states), axis=1)
+        target_q_values = np.where(dones, rewards, rewards + self.gamma * value_next_states)
+
+        with tf.GradientTape() as tape:
+            current_q_values = tf.math.reduce_sum(
+                self.predict(states) * tf.one_hot(actions, self.num_actions), axis=1
+            )
+            loss = tf.math.reduce_mean(tf.square(target_q_values - current_q_values))
+
+        variables = self.model.trainable_variables
+        gradients = tape.gradient(loss, variables)
+        self.optimizer.apply_gradients(zip(gradients, variables))
+
+        return loss.numpy()
+
+    def get_action(self, states, epsilon):
+        if np.random.random() < epsilon:
+            return np.random.choice(self.num_actions)
+        else:
+            return np.argmax(self.predict(np.atleast_2d(states))[0])
+
+    def add_transition(self, transition):
+        self.replay_buffer.add_transition(transition)
+
+    def copy_weights(self, train_q_net):
+        variables1 = self.model.trainable_variables
+        variables2 = train_q_net.model.trainable_variables
+        for v1, v2 in zip(variables1, variables2):
+            v1.assign(v2.numpy())
+
+
+def do_episode(env, train_q_net, target_q_net, epsilon, copy_step):
+    score = 0
+    iter = 0
+    done = False
+    state = env.reset()
+    losses = list()
+    while not done:
+        action = train_q_net.get_action(state, epsilon)
+        next_state, reward, done, _ = env.step(action)
+        score += reward
+        if done:
+            reward = -200
+            env.reset()
+
+        transition = {'state': state, 'action': action, 'reward': reward, 'next_state': next_state, 'done': done}
+        train_q_net.add_transition(transition)
+        state = next_state
+
+        loss = train_q_net.train(target_q_net)
+        losses.append(loss)
+        iter += 1
+
+        if iter % copy_step == 0:
+            target_q_net.copy_weights(train_q_net)
+
+    return score, np.mean(losses)
+
+
+def make_video(env, train_q_net):
+    env = wrappers.Monitor(env, os.path.join(os.getcwd(), "videos"), force=True)
+    rewards = 0
+    steps = 0
+    done = False
+    observation = env.reset()
+    while not done:
+        action = train_q_net.get_action(observation, 0)
+        observation, reward, done, _ = env.step(action)
+        steps += 1
+        rewards += reward
+    print("Testing steps: {} rewards {}: ".format(steps, rewards))
+
+
+def main():
+    env = gym.make('CartPole-v0')
+    gamma = 0.99
+    copy_step = 25
+    num_features = len(env.observation_space.sample())
+    num_actions = env.action_space.n
+    max_buffer_size = 10000
+    min_buffer_size = 100
+    batch_size = 2
+    learning_rate = 0.01
+    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir = 'logs/dqn/' + current_time
+    summary_writer = tf.summary.create_file_writer(log_dir)
+
+    train_q_net = DQN(num_features, num_actions, gamma, max_buffer_size, min_buffer_size, batch_size, learning_rate)
+    target_q_net = DQN(num_features, num_actions, gamma, max_buffer_size, min_buffer_size, batch_size, learning_rate)
+    target_q_net.copy_weights(train_q_net)
+
+    max_episodes = 50000
+    score_list = np.empty(max_episodes)
+    epsilon = 0.5
+    epsilon_decay = 0.999
+    min_epsilon = 0.1
+    avg_score = 0
+
+    for episode in range(max_episodes):
+        epsilon = max(min_epsilon, epsilon * epsilon_decay)
+
+        # score: cummulative rewards at episode
+        score, losses = do_episode(env, train_q_net, target_q_net, epsilon, copy_step)
+        score_list[episode] = score
+        avg_score = score_list[max(0, episode - 10):(episode + 1)].mean()
+
+        with summary_writer.as_default():
+            tf.summary.scalar('score', score, step=episode)
+            tf.summary.scalar('avg score', avg_score, step=episode)
+            tf.summary.scalar('avg loss', losses, step=episode)
+
+        if episode % 10 == 0:
+            print("episode: {0}, score: {1}, avg score (last 10 episodes): {2:.1f}, epsilon: {3:.3f}, episode loss: {4:.3f}".format(
+                episode, score, avg_score, epsilon, losses
+            ))
+        if avg_score >= 200:
             break
 
-fname = "dqn"
-agent = DQNAgent(state_size=4, action_size=2, seed=8)
-dqn(agent, fname=fname)
+    print("avg reward for last 10 episodes:", avg_score)
+    make_video(env, train_q_net)
+    env.close()
 
+
+if __name__ == "__main__":
+    main()
+    # tensorboard --logdir 'logs/dqn/'
