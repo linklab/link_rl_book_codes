@@ -36,7 +36,7 @@ class Replay_Buffer:
         self.max_buffer_size = max_buffer_size
         self.current_buffer_size = 0
 
-    def get_batch(self, batch_size):
+    def get_random_batch(self, batch_size):
         ids = np.random.randint(low=0, high=len(self.transitions['state']), size=batch_size)
         states = np.asarray([self.transitions['state'][i] for i in ids])
         actions = np.asarray([self.transitions['action'][i] for i in ids])
@@ -77,16 +77,12 @@ class DQN:
         if self.replay_buffer.current_buffer_size < self.train_min_buffer_size:
             return 0
 
-        states, actions, rewards, next_states, dones = self.replay_buffer.get_batch(self.batch_size)
-
-        print(target_q_net.predict(next_states)[range(2), actions])
-
-        value_next_states = np.max(target_q_net.predict(next_states), axis=1)
-        target_q_values = np.where(dones, rewards, rewards + self.gamma * value_next_states)
-
-
+        states, actions, rewards, next_states, dones = self.replay_buffer.get_random_batch(self.batch_size)
 
         with tf.GradientTape() as tape:
+            value_next_states = np.max(target_q_net.predict(next_states), axis=1)
+            target_q_values = np.where(dones, rewards, rewards + self.gamma * value_next_states)
+
             current_q_values = tf.math.reduce_sum(
                 self.predict(states) * tf.one_hot(actions, self.num_actions), axis=1
             )

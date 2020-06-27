@@ -5,7 +5,7 @@
 - cd ~/git/link_rl_book_codes/
 
 ### 2. Package 설치
-- pip install tensorflow==2.2.0
+- pip install tensorflow==2.1.0
 - pip install gym
 
 ### 3. requirements.txt 구성 
