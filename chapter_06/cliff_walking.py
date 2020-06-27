@@ -149,9 +149,9 @@ def cumulative_rewards_for_episodes(env):
     rewards_q_learning /= runs
 
     # 그래프 출력
-    plt.plot(rewards_expected_sarsa, linestyle='-.', label='기대값 기반 SARSA')
-    plt.plot(rewards_sarsa, linestyle='-', label='SARSA')
-    plt.plot(rewards_q_learning, linestyle=':', label='Q-러닝')
+    plt.plot(rewards_expected_sarsa, linestyle='-.', color='dodgerblue', label='기대값 기반 SARSA')
+    plt.plot(rewards_sarsa, linestyle='-', color='darkorange', label='SARSA')
+    plt.plot(rewards_q_learning, linestyle=':', color='green', label='Q-러닝')
     plt.xlabel('에피소드')
     plt.ylabel('에피소드 당 누적 보상')
     plt.ylim([-100, 0])
@@ -229,12 +229,15 @@ def cumulative_rewards_for_step_size(env):
 
         if method == 0 or method == 3:
             marker = 'o'
+            color = 'dodgerblue'
         elif method == 1 or method == 4:
             marker = 'x'
+            color = 'darkorange'
         else:
             marker = '+'
+            color = 'green'
 
-        plt.plot(step_sizes, performace[method, :], linestyle=linestyle, marker=marker, label=label)
+        plt.plot(step_sizes, performace[method, :], linestyle=linestyle, color=color, marker=marker, label=label)
         
     plt.xlabel('스텝 사이즈 (alpha)')
     plt.ylabel('에피소드 당 누적 보상')
