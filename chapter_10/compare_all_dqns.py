@@ -17,7 +17,7 @@ dqn_variants = [
 ]
 
 def main():
-    performance = np.zeros((len(dqn_variants), max_runs))
+    sum_performance = np.zeros(shape=(len(dqn_variants), ))
     for run in range(max_runs):
         print("######### run:{0} #########".format(run))
         env = gym.make('CartPole-v1')
@@ -40,13 +40,13 @@ def main():
         per_dueling_double_dqn_agent = PerDuelingDoubleDqnAgent(env)
         per_dueling_double_dqn_last_episode = per_dueling_double_dqn_agent.learn()
 
-        performance[0, run] = dqn_last_episode
-        performance[1, run] = double_dqn_last_episode
-        performance[2, run] = dueling_dqn_last_episode
-        performance[3, run] = dueling_double_dqn_last_episode
-        performance[4, run] = per_dueling_double_dqn_last_episode
+        sum_performance[0] += dqn_last_episode
+        sum_performance[1] += double_dqn_last_episode
+        sum_performance[2] += dueling_dqn_last_episode
+        sum_performance[3] += dueling_double_dqn_last_episode
+        sum_performance[4] += per_dueling_double_dqn_last_episode
 
-        mean_performance = performance.mean(axis=1)
+        mean_performance = sum_performance / (run + 1)
 
         plt.figure(figsize=(12, 5))
         plt.bar(dqn_variants, mean_performance)
