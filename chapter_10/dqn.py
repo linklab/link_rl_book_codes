@@ -88,9 +88,10 @@ class DqnAgent:
         self.last_episode = 0
 
     def target_update(self):
-        self.target_q_net.set_weights(
-            self.train_q_net.get_weights()
-        )
+        train_q_net_variables = self.train_q_net.trainable_variables
+        target_q_net_variables = self.target_q_net.trainable_variables
+        for v1, v2 in zip(train_q_net_variables, target_q_net_variables):
+            v2.assign(v1.numpy())
 
     def q_net_optimize(self):
         states, actions, rewards, next_states, dones = self.buffer.get_random_batch(args.batch_size)
