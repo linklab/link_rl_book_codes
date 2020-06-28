@@ -115,7 +115,8 @@ class DqnAgent:
         episode_rewards_last_10 = deque(maxlen=10)
         epsilon = args.epsilon
 
-        for ep in range(args.max_episodes):
+        ep = 1
+        while ep <= args.max_episodes:
             state = self.env.reset()
 
             episode_reward = 0
@@ -144,8 +145,11 @@ class DqnAgent:
             self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss)
 
             if avg_episode_reward >= args.episode_reward_threshold:
-                self.last_episode = ep
                 break
+
+            ep += 1
+
+        return ep
 
     def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss):
         print(
@@ -179,7 +183,9 @@ def make_video(env, agent):
 def main():
     env = gym.make('CartPole-v1')
     dqn_agent = DqnAgent(env)
-    dqn_agent.learn()
+    last_episode = dqn_agent.learn()
+    print("Learning-completion Episode: {0}".format(last_episode))
+
     make_video(env, dqn_agent)
 
 

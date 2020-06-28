@@ -54,7 +54,9 @@ class DuelingDoubleDqnAgent(DoubleDqnAgent):
 def main():
     env = gym.make('CartPole-v1')
     dueling_double_dqn_agent = DuelingDoubleDqnAgent(env)
-    dueling_double_dqn_agent.learn()
+    last_episode = dueling_double_dqn_agent.learn()
+    print("Learning-completion Episode: {0}".format(last_episode))
+
     make_video(env, dueling_double_dqn_agent)
 
 
