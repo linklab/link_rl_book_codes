@@ -52,7 +52,7 @@ def main():
         plt.bar(dqn_variants, mean_performance)
         plt.xlabel('DQN Variants')
         plt.ylabel('Learning-completion Episode')
-        plt.title('DQN Variants (run: {0})'.format(run + 1))
+        plt.title('Performance Comparison (run: {0})'.format(run + 1))
         plt.savefig("images/comparison_all_dqns.png")
         plt.close()
 
