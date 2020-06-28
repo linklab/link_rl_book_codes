@@ -10,7 +10,7 @@ from chapter_10.per_dueling_double_dqn import PerDuelingDoubleDqnAgent
 from matplotlib import pyplot as plt
 import numpy as np
 
-max_runs = 10
+max_runs = 50
 
 dqn_variants = [
     'dqn', 'double_dqn', 'dueling_dqn', 'dueling_double_dqn', 'per_dueling_double_dqn'
@@ -48,11 +48,11 @@ def main():
 
         mean_performance = performance.mean(axis=1)
 
-        plt.figure(figsize=(12, 3))
+        plt.figure(figsize=(12, 5))
         plt.bar(dqn_variants, mean_performance)
         plt.xlabel('DQN Variants')
         plt.ylabel('Learning-completion Episode')
-        plt.title('DQN Variants (run: {0})'.format(run))
+        plt.title('DQN Variants (run: {0})'.format(run + 1))
         plt.savefig("images/comparison_all_dqns.png")
         plt.close()
 
