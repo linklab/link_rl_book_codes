@@ -20,7 +20,7 @@ parser.add_argument('--epsilon_decay', type=float, default=0.999)
 parser.add_argument('--epsilon_min', type=float, default=0.01)
 parser.add_argument('--replay_memory_capacity', type=float, default=8192)
 parser.add_argument('--max_episodes', type=float, default=1000)
-parser.add_argument('--episode_reward_threshold', type=int, default=200)
+parser.add_argument('--episode_reward_threshold', type=int, default=20)
 args = parser.parse_args()
 
 current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
