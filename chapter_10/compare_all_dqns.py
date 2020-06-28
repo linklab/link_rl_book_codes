@@ -35,16 +35,16 @@ def main():
         performance[2, run] = dueling_double_dqn_agent.last_episode
         performance[3, run] = per_dueling_double_dqn_agent.last_episode
 
-    mean_performance = performance.mean(axis=1)
+        mean_performance = performance.mean(axis=1)
 
-    plt.bar(
-        ['dqn', 'double+', 'dueling++', 'per+++'],
-        mean_performance
-    )
-    plt.xlabel('DQN Variants')
-    plt.ylabel('Episode Reward')
+        plt.bar(
+            ['dqn', 'double+', 'dueling++', 'per+++'],
+            mean_performance
+        )
+        plt.xlabel('DQN Variants')
+        plt.ylabel('Episode Reward')
 
-    plt.show()
+        plt.show()
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ parser.add_argument('--epsilon_decay', type=float, default=0.999)
 parser.add_argument('--epsilon_min', type=float, default=0.01)
 parser.add_argument('--replay_memory_capacity', type=float, default=8192)
 parser.add_argument('--max_episodes', type=float, default=1000)
-parser.add_argument('--episode_reward_threshold', type=int, default=20)
+parser.add_argument('--episode_reward_threshold', type=int, default=200)
 args = parser.parse_args()
 
 current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -99,6 +99,7 @@ class DqnAgent:
     def q_net_optimize(self):
         states, actions, rewards, next_states, dones = self.buffer.get_random_batch(args.batch_size)
         targets = self.train_q_net.predict(states)
+
         next_q_values = self.target_q_net.predict(next_states).max(axis=1)
         target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
 
