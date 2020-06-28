@@ -10,7 +10,7 @@ from chapter_10.per_dueling_double_dqn import PerDuelingDoubleDqnAgent
 from matplotlib import pyplot as plt
 import numpy as np
 
-max_runs = 20
+max_runs = 30
 
 dqn_variants = [
     'dqn', 'double_dqn', 'dueling_dqn', 'dueling_double_dqn', 'per_dueling_double_dqn'
