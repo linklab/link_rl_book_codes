@@ -44,7 +44,7 @@ def main():
         )
         plt.xlabel('DQN Variants')
         plt.ylabel('Episode Reward')
-
+        plt.title('DQN Variants (run: {0})'.format(run))
         plt.savefig("images/comparison_all_dqns.png")
         plt.close()
 
