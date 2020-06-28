@@ -9,7 +9,7 @@ from chapter_10.per_dueling_double_dqn import PerDuelingDoubleDqnAgent
 from matplotlib import pyplot as plt
 import numpy as np
 
-max_runs = 10
+max_runs = 20
 
 def main():
     performance = np.zeros((4, max_runs))
