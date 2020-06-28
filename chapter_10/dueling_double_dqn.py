@@ -7,20 +7,39 @@ log_dir = 'logs/dueling_double_dqn/' + current_time
 summary_writer = tf.summary.create_file_writer(log_dir)
 
 
-class DuelingQNetwork(QNetwork):
-    def create_model(self):
-        state_input = Input((self.state_dim,))
-        backbone_1 = Dense(32, activation='relu')(state_input)
-        backbone_2 = Dense(16, activation='relu')(backbone_1)
+class DuelingQNetwork(tf.keras.Model):
+    def __init__(self, state_dim, action_dim):
+        super(DuelingQNetwork, self).__init__()
+        self.state_dim = state_dim
+        self.action_dim = action_dim
 
-        value_output = Dense(1)(backbone_2)
-        advantage_output = Dense(self.action_dim)(backbone_2)
+        self.input_layer = kl.InputLayer(input_shape=(state_dim,))
+        self.hidden_layer_1 = kl.Dense(32, activation='relu')
+        self.hidden_layer_2 = kl.Dense(16, activation='relu')
 
-        output = Add()([value_output, advantage_output])
+        self.value_output_layer = kl.Dense(units=1, activation='linear')
+        self.advantage_output_layer = kl.Dense(units=action_dim, activation='linear')
 
-        model = tf.keras.Model(state_input, output)
-        model.compile(loss='mse', optimizer=tf.optimizers.Adam(args.learning_rate))
-        return model
+        self.output_layer = kl.Add()
+
+    def forward(self, state):
+        z = self.input_layer(state)
+        z = self.hidden_layer_1(z)
+        z = self.hidden_layer_2(z)
+
+        value = self.value_output_layer(z)
+        advantage = self.advantage_output_layer(z)
+
+        output = self.output_layer(inputs=[value, advantage])
+        return output
+
+    def get_action(self, state, epsilon):
+        if np.random.random() < epsilon:
+            return random.randint(0, self.action_dim - 1)
+        else:
+            state = np.reshape(state, [1, self.state_dim])
+            q_value = self.forward(state)[0]
+            return np.argmax(q_value)
 
 
 class DuelingDoubleDqnAgent(DoubleDqnAgent):

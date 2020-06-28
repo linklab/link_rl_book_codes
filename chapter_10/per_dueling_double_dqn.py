@@ -113,36 +113,33 @@ class PerDuelingDoubleDqnAgent(DuelingDoubleDqnAgent):
         self.__name__ = "per_dueling_double_dqn_agent"
         self.buffer = PrioritizedExperienceMemory(args.replay_memory_capacity)
 
-        self.optimizer = tf.optimizers.Adam(args.learning_rate)
-
     def q_net_optimize(self):
         batch, idxs, is_weight = self.buffer.get_random_batch(args.batch_size)
         states, actions, rewards, next_states, dones = map(np.asarray, zip(*batch))
-        targets = self.train_q_net.predict(states)
 
-        next_q_values = self.target_q_net.predict(next_states)[
-            range(args.batch_size), np.argmax(self.train_q_net.predict(next_states), axis=1)
-        ]
+        with tf.GradientTape() as tape:
+            selected_actions = np.argmax(self.train_q_net.forward(next_states), axis=1)
+            next_q_values = tf.math.reduce_sum(
+                self.target_q_net.forward(next_states) * tf.one_hot(selected_actions, self.action_dim),axis=1
+            )
+            target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
+            current_q_values = tf.math.reduce_sum(
+                self.train_q_net.forward(states) * tf.one_hot(actions, self.action_dim), axis=1
+            )
+            loss = tf.math.reduce_mean(tf.square(target_q_values - current_q_values) * is_weight)
 
-        # 우선순위 업데이트
-        target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
-        current_q_values = tf.math.reduce_sum(
-            self.train_q_net.predict(states) * tf.one_hot(actions, self.action_dim), axis=1
-        )
+        # td_error로 우선순위 업데이트
         td_error = np.abs(target_q_values - current_q_values)
-
         for i in range(args.batch_size):
             idx = idxs[i]
             self.buffer.update_priority(idx, td_error[i])
 
-        # 타겟 설정
-
-        targets[range(args.batch_size), actions] = target_q_values
-
         # train_q_net 가중치 갱신
-        loss = self.train_q_net.optimize(states, targets)
+        variables = self.train_q_net.trainable_variables
+        gradients = tape.gradient(loss, variables)
+        self.optimizer.apply_gradients(zip(gradients, variables))
 
-        return loss
+        return loss.numpy()
 
 
 def prioritized_experience_memory_test():

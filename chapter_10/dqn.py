@@ -1,6 +1,6 @@
 #https://github.com/marload/DeepRL-TensorFlow2
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Dense
+import tensorflow.keras.layers as kl
 
 import datetime
 import gym
@@ -45,36 +45,31 @@ class ReplayMemory:
         return len(self.buffer)
 
 
-class QNetwork:
+class QNetwork(tf.keras.Model):
     def __init__(self, state_dim, action_dim):
+        super(QNetwork, self).__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
-        self.model = self.create_model()
 
-    def create_model(self):
-        model = tf.keras.Sequential([
-            Input((self.state_dim,)),
-            Dense(32, activation='relu'),
-            Dense(16, activation='relu'),
-            Dense(self.action_dim)
-        ])
-        model.compile(loss='mse', optimizer=tf.optimizers.Adam(args.learning_rate))
-        return model
+        self.input_layer = kl.InputLayer(input_shape=(state_dim,))
+        self.hidden_layer_1 = kl.Dense(units=32, activation='relu')
+        self.hidden_layer_2 = kl.Dense(units=16, activation='relu')
+        self.output_layer = kl.Dense(units=action_dim, activation='linear')
 
-    def predict(self, state):
-        return self.model.predict(state)
+    def forward(self, state):
+        z = self.input_layer(state)
+        z = self.hidden_layer_1(z)
+        z = self.hidden_layer_2(z)
+        output = self.output_layer(z)
+        return output
 
     def get_action(self, state, epsilon):
         if np.random.random() < epsilon:
             return random.randint(0, self.action_dim - 1)
         else:
             state = np.reshape(state, [1, self.state_dim])
-            q_value = self.predict(state)[0]
+            q_value = self.forward(state)[0]
             return np.argmax(q_value)
-
-    def optimize(self, states, targets):
-        hist = self.model.fit(states, targets, epochs=1, verbose=0)
-        return hist.history['loss'][0]
 
 
 class DqnAgent:
@@ -84,6 +79,7 @@ class DqnAgent:
         self.state_dim = self.env.observation_space.shape[0]
         self.action_dim = self.env.action_space.n
 
+        self.optimizer = tf.optimizers.Adam(args.learning_rate)
         self.train_q_net = QNetwork(self.state_dim, self.action_dim)
         self.target_q_net = QNetwork(self.state_dim, self.action_dim)
         self.target_update()
@@ -92,21 +88,27 @@ class DqnAgent:
         self.last_episode = 0
 
     def target_update(self):
-        self.target_q_net.model.set_weights(
-            self.train_q_net.model.get_weights()
+        self.target_q_net.set_weights(
+            self.train_q_net.get_weights()
         )
 
     def q_net_optimize(self):
         states, actions, rewards, next_states, dones = self.buffer.get_random_batch(args.batch_size)
-        targets = self.train_q_net.predict(states)
 
-        next_q_values = self.target_q_net.predict(next_states).max(axis=1)
-        target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
+        with tf.GradientTape() as tape:
+            next_q_values = np.max(self.target_q_net.forward(next_states), axis=1)
+            target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
+            current_q_values = tf.math.reduce_sum(
+                self.train_q_net.forward(states) * tf.one_hot(actions, self.action_dim), axis=1
+            )
 
-        targets[range(args.batch_size), actions] = target_q_values
+            loss = tf.math.reduce_mean(tf.square(target_q_values - current_q_values))
 
-        loss = self.train_q_net.optimize(states, targets)
-        return loss
+        variables = self.train_q_net.trainable_variables
+        gradients = tape.gradient(loss, variables)
+        self.optimizer.apply_gradients(zip(gradients, variables))
+
+        return loss.numpy()
 
     def learn(self):
         episode_rewards_last_10 = deque(maxlen=10)
@@ -160,11 +162,12 @@ def make_video(env, agent):
     env = wrappers.Monitor(env, os.path.join(os.getcwd(), "videos"), force=True)
     rewards = 0
     steps = 0
+    epsilon = 0.0
+
     done = False
     state = env.reset()
     while not done:
         env.render()
-        epsilon = 0.0
         action = agent.train_q_net.get_action(state, epsilon)
         state, reward, done, _ = env.step(action)
         steps += 1
