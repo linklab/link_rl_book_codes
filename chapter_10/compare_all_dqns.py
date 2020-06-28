@@ -1,4 +1,5 @@
 import gym
+import os
 
 from chapter_10.dqn import DqnAgent, args
 from chapter_10.double_dqn import DoubleDqnAgent
@@ -44,8 +45,11 @@ def main():
         plt.xlabel('DQN Variants')
         plt.ylabel('Episode Reward')
 
-        plt.show()
+        plt.savefig("images/comparison_all_dqns.png")
+        plt.close()
 
 
 if __name__ == "__main__":
+    if not os.path.exists('images/'):
+        os.makedirs('images/')
     main()

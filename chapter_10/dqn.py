@@ -99,6 +99,7 @@ class DqnAgent:
     def q_net_optimize(self):
         states, actions, rewards, next_states, dones = self.buffer.get_random_batch(args.batch_size)
         targets = self.train_q_net.predict(states)
+
         next_q_values = self.target_q_net.predict(next_states).max(axis=1)
         target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
 

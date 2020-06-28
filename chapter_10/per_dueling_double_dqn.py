@@ -118,14 +118,17 @@ class PerDuelingDoubleDqnAgent(DuelingDoubleDqnAgent):
     def q_net_optimize(self):
         batch, idxs, is_weight = self.buffer.get_random_batch(args.batch_size)
         states, actions, rewards, next_states, dones = map(np.asarray, zip(*batch))
+        targets = self.train_q_net.predict(states)
 
-        next_q_values = self.target_q_net.predict(next_states).max(axis=1)
+        next_q_values = self.target_q_net.predict(next_states)[
+            range(args.batch_size), np.argmax(self.train_q_net.predict(next_states), axis=1)
+        ]
+
+        # 우선순위 업데이트
         target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
         current_q_values = tf.math.reduce_sum(
             self.train_q_net.predict(states) * tf.one_hot(actions, self.action_dim), axis=1
         )
-
-        # 우선순위 업데이트
         td_error = np.abs(target_q_values - current_q_values)
 
         for i in range(args.batch_size):
@@ -133,9 +136,10 @@ class PerDuelingDoubleDqnAgent(DuelingDoubleDqnAgent):
             self.buffer.update_priority(idx, td_error[i])
 
         # 타겟 설정
-        targets = self.train_q_net.predict(states)
+
         targets[range(args.batch_size), actions] = target_q_values
 
+        # train_q_net 가중치 갱신
         loss = self.train_q_net.optimize(states, targets)
 
         return loss
