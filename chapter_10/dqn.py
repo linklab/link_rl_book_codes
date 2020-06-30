@@ -175,8 +175,7 @@ def make_video(env, agent):
 def main():
     env = gym.make('CartPole-v0')
     dqn_agent = DqnAgent(env)
-    last_episode = dqn_agent.learn()
-    print("Learning-completion Episode: {0}".format(last_episode))
+    dqn_agent.learn()
 
     make_video(env, dqn_agent)
 
