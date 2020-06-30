@@ -31,7 +31,7 @@ class DoubleDqnAgent(DqnAgent):
 
 
 def main():
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v0')
     double_dqn_agent = DoubleDqnAgent(env)
     last_episode = double_dqn_agent.learn()
     print("Learning-completion Episode: {0}".format(last_episode))

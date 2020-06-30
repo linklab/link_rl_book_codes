@@ -17,10 +17,9 @@ parser.add_argument('--learning_rate', type=float, default=0.005)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--epsilon', type=float, default=1.0)
 parser.add_argument('--epsilon_decay', type=float, default=0.999)
-parser.add_argument('--epsilon_min', type=float, default=0.01)
+parser.add_argument('--epsilon_min', type=float, default=0.001)
 parser.add_argument('--replay_memory_capacity', type=float, default=8192)
-parser.add_argument('--max_episodes', type=float, default=1000)
-parser.add_argument('--episode_reward_threshold', type=int, default=200)
+parser.add_argument('--max_episodes', type=float, default=75)
 args = parser.parse_args()
 
 current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -85,7 +84,7 @@ class DqnAgent:
         self.target_update()
 
         self.buffer = ReplayMemory(args.replay_memory_capacity)
-        self.last_episode = 0
+        self.episode_reward_list = []
 
     def target_update(self):
         train_q_net_variables = self.train_q_net.trainable_variables
@@ -115,8 +114,7 @@ class DqnAgent:
         episode_rewards_last_10 = deque(maxlen=10)
         epsilon = args.epsilon
 
-        ep = 1
-        while ep <= args.max_episodes:
+        for ep in range(args.max_episodes):
             state = self.env.reset()
 
             episode_reward = 0
@@ -143,13 +141,7 @@ class DqnAgent:
             self.target_update()
 
             self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss)
-
-            if avg_episode_reward >= args.episode_reward_threshold:
-                break
-
-            ep += 1
-
-        return ep
+            self.episode_reward_list.append(avg_episode_reward)
 
     def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss):
         print(
@@ -181,7 +173,7 @@ def make_video(env, agent):
 
 
 def main():
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v0')
     dqn_agent = DqnAgent(env)
     last_episode = dqn_agent.learn()
     print("Learning-completion Episode: {0}".format(last_episode))

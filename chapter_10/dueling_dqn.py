@@ -46,7 +46,7 @@ class DuelingDqnAgent(DqnAgent):
 
 
 def main():
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v0')
     dueling_dqn_agent = DuelingDqnAgent(env)
     last_episode = dueling_dqn_agent.learn()
     print("Learning-completion Episode: {0}".format(last_episode))
