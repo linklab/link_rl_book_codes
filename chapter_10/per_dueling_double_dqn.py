@@ -154,10 +154,9 @@ def prioritized_experience_memory_test():
 
 
 def main():
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v0')
     per_dueling_double_dqn_agent = PerDuelingDoubleDqnAgent(env)
-    last_episode = per_dueling_double_dqn_agent.learn()
-    print("Learning-completion Episode: {0}".format(last_episode))
+    per_dueling_double_dqn_agent.learn()
 
     make_video(env, per_dueling_double_dqn_agent)
 
