@@ -17,3 +17,4 @@
 ### 5. RL 구현 참고 자료
 - https://towardsdatascience.com/deep-reinforcement-learning-build-a-deep-q-network-dqn-to-play-cartpole-with-tensorflow-2-and-gym-8e105744b998
 - http://inoryy.com/post/tensorflow2-deep-reinforcement-learning/
+
