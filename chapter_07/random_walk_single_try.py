@@ -80,9 +80,14 @@ def temporal_difference(value, n, alpha):
 
             # 누적 보상(또는 이득)에 상태 가치 추가
             if tau + n < T:
+                # states = [S_0, S_1, S_2, S_3]
                 returns += pow(GAMMA, n) * value[states[(tau + n)]]
 
             state_to_update = states[tau]
+
+            print("T:{0}, time_step:{1}, n:{2}, tau: {3}, tau + n: {4}, len(states): {5}, len(rewards): {6}".format(
+                T, time_step, n, tau, tau + n, len(states), len(rewards)
+            ))
 
             # 상태 가치 갱신
             if state_to_update not in TERMINAL_STATES:
@@ -93,48 +98,28 @@ def temporal_difference(value, n, alpha):
         else:
             # 다음 타임 스텝
             time_step += 1
-        state = next_state
-
+            state = next_state
 
 def n_step_td_for_random_walk():
-    # 가능한 스텝
-    steps = np.power(2, np.arange(0, 10))
+    # n-스텝
+    n = 3
 
-    # 가능한 스텝 사이즈
-    alphas = np.arange(0, 1.1, 0.1)
+    # 스텝 사이즈
+    alpha = 0.1
 
-    # 총 10번의 수행
-    runs = 100
-
-    # 가 수행당 10번의 에피소드 수행
-    episodes = 10
+    # 가 수행당 1번의 에피소드 수행
+    episodes = 1
 
     # 각 (상태, 스텝 사이즈) 쌍에 대래 오차를 추적함
-    errors = np.zeros((len(steps), len(alphas)))
-    for run in range(runs):
-        for step_ind, n in enumerate(steps):
-            for alpha_ind, alpha in enumerate(alphas):
-                print('run: {0}/{1}, step: {2}/{3}, alpha: {4:.2f}/{5:.2f}'.format(run, 100, n, 2**9, alpha, 1.0))
-                value = np.zeros(N_STATES + 2)
-                for ep in range(episodes):
-                    temporal_difference(value, n, alpha)
-                    # RMS (Rooted Mean Square) 오차 계산
-                    errors[step_ind, alpha_ind] += np.sqrt(np.sum(np.power(value - TRUE_VALUE, 2)) / N_STATES)
+    errors = 0.0
+    value = np.zeros(N_STATES + 2)
+    for ep in range(episodes):
+        temporal_difference(value, n, alpha)
+        # RMS (Rooted Mean Square) 오차 계산
+        errors += np.sqrt(np.sum(np.power(value - TRUE_VALUE, 2)) / N_STATES)
 
     # RMS 오차 평균값 계산
-    errors /= episodes * runs
-
-    marker = ['o', 'x', '.', 's', '*', '+', '|', '^', 'D', ' ']
-    for i in range(0, len(steps)):
-        plt.plot(alphas, errors[i, :], marker=marker[i], label='n = %d' % (steps[i]))
-
-    plt.xlabel('스텝 사이즈(alpha)')
-    plt.ylabel('RMS 오차')
-    plt.ylim([0.25, 0.6])
-    plt.legend()
-
-    plt.savefig('images/n_step_td_for_random_walk.png')
-    plt.close()
+    errors /= episodes
 
 
 if __name__ == '__main__':
