@@ -10,7 +10,7 @@ GRID_WIDTH = 4
 TERMINAL_STATES = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
 
 
-def get_explorering_start_state():
+def get_exploring_start_state():
     while True:
         i = random.randrange(GRID_HEIGHT)
         j = random.randrange(GRID_WIDTH)
@@ -24,7 +24,7 @@ def generate_random_episode(env):
     episode = []
     visited_states = []
 
-    initial_state = get_explorering_start_state()
+    initial_state = get_exploring_start_state()
     env.moveto(initial_state)
 
     episode.append((initial_state, -1))

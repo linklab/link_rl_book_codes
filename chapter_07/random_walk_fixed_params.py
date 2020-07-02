@@ -100,6 +100,7 @@ def temporal_difference(value, n, alpha):
             time_step += 1
             state = next_state
 
+
 def n_step_td_for_random_walk():
     # n-스텝
     n = 3
@@ -112,11 +113,11 @@ def n_step_td_for_random_walk():
 
     # 각 (상태, 스텝 사이즈) 쌍에 대래 오차를 추적함
     errors = 0.0
-    value = np.zeros(N_STATES + 2)
+    values = np.zeros(N_STATES + 2)
     for ep in range(episodes):
-        temporal_difference(value, n, alpha)
+        temporal_difference(values, n, alpha)
         # RMS (Rooted Mean Square) 오차 계산
-        errors += np.sqrt(np.sum(np.power(value - TRUE_VALUE, 2)) / N_STATES)
+        errors += np.sqrt(np.sum(np.power(values - TRUE_VALUE, 2)) / N_STATES)
 
     # RMS 오차 평균값 계산
     errors /= episodes
