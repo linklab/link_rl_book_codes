@@ -29,6 +29,7 @@ START_STATE = (3, 0)
 TERMINAL_STATES = [(3, 11)]
 CLIFF_STATES = [(3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7), (3, 8), (3, 9), (3, 10)]
 
+
 # epsilon-탐욕적 정책에 따른 행동 선택
 def choose_action(env, state, q_value):
     if np.random.binomial(1, EPSILON) == 1:
