@@ -117,8 +117,7 @@ def compute_state_values(env):
     episodes = [3, 10, 100]
     markers = ['o', '+', 'D']
     plt.figure()
-    state_values = VALUES
-    plt.plot(['A', 'B', 'C', 'D', 'E'], state_values, label='초기 가치', linestyle=":")
+    plt.plot(['A', 'B', 'C', 'D', 'E'], VALUES, label='초기 가치', linestyle=":")
 
     for i in range(len(episodes)):
         state_values = VALUES.copy()

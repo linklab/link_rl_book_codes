@@ -9,21 +9,21 @@ logger = get_logger("mcts")
 
 
 class Node:
-    def __init__(self, position=(-1,-1), parent=None, env=None, player_just_moved=PLAYER_1):
+    def __init__(self, position=(-1,-1), parent=None, current_state=None, player_just_moved=PLAYER_1):
         self.position = position
         self.parent_node = parent
         self.child_nodes = []
         self.wins = 0
         self.visits = 0
-        self.untried_positions = env.current_state.get_available_positions() # env.get_available_positions()
+        self.untried_positions = current_state.get_available_positions()
         self.player_just_moved = player_just_moved
 
     def select_child_uct(self):
         s = sorted(self.child_nodes, key=lambda c: c.wins / c.visits + sqrt(2 * log(self.visits) / c.visits))
         return s[-1]
 
-    def append_child(self, position, env):
-        child_node = Node(position=position, parent=self, env=env, player_just_moved=-self.player_just_moved)
+    def append_child(self, position, current_state):
+        child_node = Node(position=position, parent=self, current_state=current_state, player_just_moved=-self.player_just_moved)
         self.untried_positions.remove(position)
         self.child_nodes.append(child_node)
         return child_node
@@ -47,7 +47,7 @@ class Node:
 
 
 def position_by_uct(env, player_just_moved, itermax): # Upper Confidence Bounds Applied to Trees
-    root_node = Node(env=env, player_just_moved=player_just_moved)
+    root_node = Node(current_state=env.current_state, player_just_moved=player_just_moved)
 
     for i in range(itermax):
         node_last_visited = root_node
@@ -67,7 +67,7 @@ def position_by_uct(env, player_just_moved, itermax): # Upper Confidence Bounds 
             env_current_state = env_copied.current_state.data.copy()
             new_position = random.choice(node_last_visited.untried_positions)
             env_copied.step(action=new_position)
-            node_last_visited = node_last_visited.append_child(new_position, env_copied)
+            node_last_visited = node_last_visited.append_child(new_position, env_copied.current_state)
             logger.info("Iter {0:4}: Copied Environment State: {1} - {2:>15} - Node Last Visited: {3}".format(
                 i, env_current_state, "Expansion", node_last_visited
             ))
@@ -111,9 +111,10 @@ def play_game_uct(human_move_first=True):
         if env.current_player_int == player_just_moved:
             new_position = position_by_uct(env, player_just_moved, itermax=3000)
         else:
-            new_position = [int(i) for i in input("which position do you want to move? : ").split(',')]
+            new_position = [int(i) for i in input("which position do you want to move?: ").split(',')]
             if len(new_position) == 1:
                 new_position = (new_position[0] // 3, new_position[0] % 3)
+
         print("Best Move : {0}\n".format(new_position))
         env.step(action=list(new_position))
 

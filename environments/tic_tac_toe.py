@@ -1,4 +1,7 @@
+import random
+
 import gym
+from gym import spaces
 import numpy as np
 
 PLAYER_TO_SYMBOL = ['*', 'O', 'X']
@@ -7,6 +10,7 @@ PLAYER_2 = -1
 BOARD_ROWS = 3
 BOARD_COLS = 3
 
+ALL_STATES = {}
 
 ################################################################
 # 플레이어 1,2 간의 게임 진행을 담당하는 Env 클래스
@@ -16,31 +20,44 @@ class TicTacToe(gym.Env):
         self.current_state = None
         self.current_player_int = None
 
+        self.INITIAL_STATE = State()
+
+        ALL_STATES[self.INITIAL_STATE.identifier()] = self.INITIAL_STATE
+
+        self.generate_all_states(state=State(), player_int=PLAYER_1)
+        self.generate_all_states(state=State(), player_int=PLAYER_2)
+
     def reset(self):
         self.current_player_int = PLAYER_1
-        self.current_state = INITIAL_STATE
+        self.current_state = self.INITIAL_STATE
+        return self.current_state
 
     # 게임 진행을 위해 턴마다 호출
     def step(self, action=None):
         # 플레이어의 행동에 의한 다음 상태 갱신
-        next_state_hash = get_new_state(
-            action[0],
-            action[1],
-            self.current_state.data,
-            self.current_player_int
+        next_state_hash = self.get_new_state(
+            action[0], action[1], self.current_state.data, self.current_player_int
         ).identifier()
 
         assert next_state_hash in ALL_STATES
 
-        next_state, done = ALL_STATES[next_state_hash]
+        next_state = ALL_STATES[next_state_hash]
+
+        done = next_state.is_end()
 
         if done:
-            info = {'winner': next_state.winner}
+            info = {'current_player_int': self.current_player_int, 'winner': next_state.winner}
+            if next_state.winner == PLAYER_1:
+                reward = 1.0
+            elif next_state.winner == PLAYER_2:
+                reward = -1.0
+            else:
+                reward = 0.0
         else:
-            info = None
+            info = {'current_player_int': self.current_player_int}
+            reward = 0.0
 
         self.current_state = next_state
-        reward = 0.0
 
         if self.current_player_int == PLAYER_1:
             self.current_player_int = PLAYER_2
@@ -51,6 +68,35 @@ class TicTacToe(gym.Env):
 
     def render(self, mode='human'):
         self.current_state.print_board()
+
+    # 주어진 상태 및 현재 플레이어 심볼에 대하여 발생 가능한 모든 게임 상태 집합 생성
+    def generate_all_states(self, state, player_int):
+        for i in range(BOARD_ROWS):
+            for j in range(BOARD_COLS):
+                if state.data[i][j] == 0:
+                    # 도달 가능한 새로운 상태 생성
+                    new_state = self.get_new_state(i, j, state.data, player_int)
+
+                    # 새로운 상태의 해시값 가져오기
+                    new_hash = new_state.identifier()
+
+                    if new_hash not in ALL_STATES:
+                        # 모든 게임 상태 집합 갱신
+                        ALL_STATES[new_hash] = new_state
+                        # 게임 미종료시 재귀 호출로 새로운 상태 계속 생성
+                        if not new_state.is_end():
+                            self.generate_all_states(new_state, -player_int)
+
+    def get_new_state(self, i, j, state_data, player_int):
+        new_state = State()
+
+        # 주어진 상태의 게임판 상황 복사
+        new_state.data = np.copy(state_data)
+
+        # 플레이어의 행동(i, j 위치에 표시) 반영
+        new_state.data[i, j] = player_int
+
+        return new_state
 
 
 #########################################################
@@ -79,6 +125,9 @@ class State:
                     self.hash_val = self.hash_val * 3 + self.data[i, j] + 1
 
         return self.hash_val
+
+    def __hash__(self):
+        return self.identifier()
 
     # 플레이어가 종료 상태에 있는지 판단.
     # 플레이어가 게임을 이기거나, 지거나, 비겼다면 True 반환, 그 외는 False 반환
@@ -126,7 +175,7 @@ class State:
         if self.is_end():
             return []
         else:
-            return [[i, j] for i in range(BOARD_ROWS) for j in range(BOARD_COLS) if self.data[i, j] == 0]
+            return [(i, j) for i in range(BOARD_ROWS) for j in range(BOARD_COLS) if self.data[i, j] == 0]
 
     # 게임판 출력
     def print_board(self):
@@ -148,37 +197,24 @@ class State:
         return self_str
 
 
-# 주어진 상태 및 현재 플레이어 심볼에 대하여 발생 가능한 모든 게임 상태 집합 생성
-def generate_all_states(state, player_int):
-    for i in range(BOARD_ROWS):
-        for j in range(BOARD_COLS):
-            if state.data[i][j] == 0:
-                # 도달 가능한 새로운 상태 생성
-                new_state = get_new_state(i, j, state.data, player_int)
+def main():
+    env = TicTacToe()
 
-                # 새로운 상태의 해시값 가져오기
-                new_hash = new_state.identifier()
+    print("INITIAL_STATE: {0}".format(env.INITIAL_STATE))
+    print("NUMBER OF ALL STATES: {0}".format(len(ALL_STATES)))
 
-                if new_hash not in ALL_STATES:
-                    # 모든 게임 상태 집합 갱신
-                    ALL_STATES[new_hash] = (new_state, new_state.is_end())
-                    # 게임 미종료시 재귀 호출로 새로운 상태 계속 생성
-                    if not new_state.is_end():
-                        generate_all_states(new_state, -player_int)
+    state = env.reset()
 
+    done = False
+    while not done:
+        action = random.choice(state.get_available_positions())
+        next_state, reward, done, info = env.step(action)
+        env.render()
+        print("reward: {0}, done: {1}, info: {2}".format(reward, done, info))
+        print()
 
-def get_new_state(i, j, state_data, player_int):
-    new_state = State()
-    # 주어진 상태의 게임판 상황 복사
-    new_state.data = np.copy(state_data)
-    # 플레이어의 행동(i, j 위치에 표시) 반영
-    new_state.data[i, j] = player_int
-    return new_state
+        state = next_state
 
 
-INITIAL_STATE = State()
-ALL_STATES = {INITIAL_STATE.identifier(): (INITIAL_STATE, INITIAL_STATE.is_end())}
-
-generate_all_states(state=State(), player_int=PLAYER_1)
-generate_all_states(state=State(), player_int=PLAYER_2)
-
+if __name__ == "__main__":
+    main()
