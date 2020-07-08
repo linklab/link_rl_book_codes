@@ -21,8 +21,11 @@ def main():
     env = gym.make('CartPole-v0')
     dueling_double_dqn_agent = DuelingDoubleDqnAgent(env)
     dueling_double_dqn_agent.learn()
+    dueling_double_dqn_agent.save_model()
 
-    make_video(env, dueling_double_dqn_agent)
+    dueling_double_dqn_agent2 = DuelingDoubleDqnAgent(env)
+    dueling_double_dqn_agent2.load_model()
+    execution(env, dueling_double_dqn_agent2)
 
 
 if __name__ == "__main__":

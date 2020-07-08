@@ -34,8 +34,11 @@ def main():
     env = gym.make('CartPole-v0')
     double_dqn_agent = DoubleDqnAgent(env)
     double_dqn_agent.learn()
+    double_dqn_agent.save_model()
 
-    make_video(env, double_dqn_agent)
+    double_dqn_agent2 = DoubleDqnAgent(env)
+    double_dqn_agent2.load_model()
+    execution(env, double_dqn_agent2)
 
 
 if __name__ == "__main__":

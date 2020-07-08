@@ -43,14 +43,20 @@ class DuelingDqnAgent(DqnAgent):
     def __init__(self, env):
         super().__init__(env)
         self.__name__ = "dueling_dqn_agent"
+        self.train_q_net = DuelingQNetwork(self.state_dim, self.action_dim)
+        self.target_q_net = DuelingQNetwork(self.state_dim, self.action_dim)
+        self.target_update()
 
 
 def main():
     env = gym.make('CartPole-v0')
     dueling_dqn_agent = DuelingDqnAgent(env)
     dueling_dqn_agent.learn()
+    dueling_dqn_agent.save_model()
 
-    make_video(env, dueling_dqn_agent)
+    dueling_dqn_agent2 = DuelingDqnAgent(env)
+    dueling_dqn_agent2.load_model()
+    execution(env, dueling_dqn_agent2)
 
 
 if __name__ == "__main__":

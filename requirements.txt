@@ -1,6 +1,7 @@
 absl-py==0.9.0
 astor==0.8.1
 astunparse==1.6.3
+atari-py==0.2.6
 cachetools==4.1.0
 certifi==2020.6.20
 chardet==3.0.4
@@ -23,7 +24,9 @@ Markdown==3.2.2
 matplotlib==3.2.1
 numpy==1.19.0
 oauthlib==3.1.0
+opencv-python==4.3.0.36
 opt-einsum==3.2.1
+Pillow==7.2.0
 protobuf==3.12.2
 pyasn1==0.4.8
 pyasn1-modules==0.2.8

@@ -137,3 +137,7 @@ temp
 wandb
 
 videos
+
+*.h5
+
+models

@@ -19,7 +19,7 @@ parser.add_argument('--epsilon', type=float, default=1.0)
 parser.add_argument('--epsilon_decay', type=float, default=0.999)
 parser.add_argument('--epsilon_min', type=float, default=0.001)
 parser.add_argument('--replay_memory_capacity', type=float, default=8192)
-parser.add_argument('--max_episodes', type=float, default=75)
+parser.add_argument('--max_episodes', type=float, default=25)
 args = parser.parse_args()
 
 current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -86,6 +86,9 @@ class DqnAgent:
         self.buffer = ReplayMemory(args.replay_memory_capacity)
         self.episode_reward_list = []
 
+        if not os.path.exists(os.path.join(os.getcwd(), 'models')):
+            os.makedirs(os.path.join(os.getcwd(), 'models'))
+
     def target_update(self):
         train_q_net_variables = self.train_q_net.trainable_variables
         target_q_net_variables = self.target_q_net.trainable_variables
@@ -143,6 +146,16 @@ class DqnAgent:
             self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss)
             self.episode_reward_list.append(avg_episode_reward)
 
+    def save_model(self):
+        self.train_q_net.save_weights(
+            os.path.join(os.getcwd(), 'models', 'dqn_{0}.tf'.format(self.__name__)), save_format="tf"
+        )
+
+    def load_model(self):
+        self.train_q_net.load_weights(
+            os.path.join(os.getcwd(), 'models', 'dqn_{0}.tf'.format(self.__name__))
+        )
+
     def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss):
         print(
             "[{0}] Episode: {1}(Epsilon: {2:.3f}), Episode reward: {3}, Average episode reward (last 10 episodes): {4:.3f}, Episode loss: {5:.5f}".format(
@@ -155,8 +168,10 @@ class DqnAgent:
             tf.summary.scalar('Episode Loss', episode_loss, step=ep)
 
 
-def make_video(env, agent):
-    env = wrappers.Monitor(env, os.path.join(os.getcwd(), "videos"), force=True)
+def execution(env, agent, make_video=False):
+    if make_video:
+        env = wrappers.Monitor(env, os.path.join(os.getcwd(), "videos"), force=True)
+
     rewards = 0
     steps = 0
     epsilon = 0.0
@@ -176,8 +191,11 @@ def main():
     env = gym.make('CartPole-v0')
     dqn_agent = DqnAgent(env)
     dqn_agent.learn()
+    dqn_agent.save_model()
 
-    make_video(env, dqn_agent)
+    dqn_agent2 = DqnAgent(env)
+    dqn_agent2.load_model()
+    execution(env, dqn_agent2)
 
 
 if __name__ == "__main__":

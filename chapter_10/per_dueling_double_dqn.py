@@ -157,8 +157,11 @@ def main():
     env = gym.make('CartPole-v0')
     per_dueling_double_dqn_agent = PerDuelingDoubleDqnAgent(env)
     per_dueling_double_dqn_agent.learn()
+    per_dueling_double_dqn_agent.save_model()
 
-    make_video(env, per_dueling_double_dqn_agent)
+    per_dueling_double_dqn_agent2 = PerDuelingDoubleDqnAgent(env)
+    per_dueling_double_dqn_agent2.save_model()
+    execution(env, per_dueling_double_dqn_agent2)
 
 
 if __name__ == "__main__":
