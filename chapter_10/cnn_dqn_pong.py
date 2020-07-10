@@ -10,7 +10,7 @@ from environments.pong import PongWrappingEnv, PONG_UP_ACTION, PONG_DOWN_ACTION
 log_dir = 'logs/cnn_dqn_pong/' + current_time
 summary_writer = tf.summary.create_file_writer(log_dir)
 
-args.epsilon_decay = 0.9999
+args.epsilon_decay = 0.99999
 
 
 class CnnPongQNetwork(tf.keras.Model):
