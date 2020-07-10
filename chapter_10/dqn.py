@@ -125,6 +125,7 @@ class DqnAgent:
             done = False
 
             while not done:
+                # self.env.render()
                 epsilon = max(args.epsilon_min, epsilon * args.epsilon_decay)
                 action = self.train_q_net.get_action(state, epsilon)
                 next_state, reward, done, _ = self.env.step(action)
@@ -137,6 +138,7 @@ class DqnAgent:
                     episode_loss += self.q_net_optimize()
 
                 state = next_state
+            print()
 
             episode_rewards_last_10.append(episode_reward)
             avg_episode_reward = np.array(episode_rewards_last_10).mean()

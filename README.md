@@ -17,4 +17,5 @@
 ### 5. RL 구현 참고 자료
 - https://towardsdatascience.com/deep-reinforcement-learning-build-a-deep-q-network-dqn-to-play-cartpole-with-tensorflow-2-and-gym-8e105744b998
 - http://inoryy.com/post/tensorflow2-deep-reinforcement-learning/
-
+- https://blog.naver.com/PostView.nhn?blogId=msnayana&logNo=221431225117&categoryNo=182&parentCategoryNo=0&viewDate=&currentPage=1&postListTopCurrentPage=1&from=postView
+- Pong-v0: https://towardsdatascience.com/intro-to-reinforcement-learning-pong-92a94aa0f84d#9e3b
