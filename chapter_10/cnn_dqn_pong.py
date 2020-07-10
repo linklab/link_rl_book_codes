@@ -45,11 +45,15 @@ class PongEnv:
             return observation, reward, done, info
 
     def reset(self):
-        observation = self.get_skipped_frames(reset=True)
+        # observation = self.get_skipped_frames(reset=True)
+        observation = self.env.reset()
+        observation = self.downsample(observation)
         return observation
 
     def step(self, action):
-        observation, reward, done, info = self.get_skipped_frames(action=action)
+        # observation, reward, done, info = self.get_skipped_frames(action=action)
+        observation, reward, done, info = self.env.step(action=action)
+        observation = self.downsample(observation)
         return observation, reward, done, info
 
     def render(self, mode='human'):
