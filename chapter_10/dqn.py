@@ -28,6 +28,19 @@ log_dir = 'logs/dqn/' + current_time
 summary_writer = tf.summary.create_file_writer(log_dir)
 
 
+def print_args():
+    print("##############################################")
+    print("gamma: {0}".format(args.gamma))
+    print("learning_rate: {0}".format(args.learning_rate))
+    print("batch_size: {0}".format(args.batch_size))
+    print("epsilon: {0}".format(args.epsilon))
+    print("epsilon_decay: {0}".format(args.epsilon_decay))
+    print("epsilon_min: {0}".format(args.epsilon_min))
+    print("replay_memory_capacity: {0}".format(args.replay_memory_capacity))
+    print("max_episodes: {0}".format(args.max_episodes))
+    print("##############################################")
+
+
 class ReplayMemory:
     def __init__(self, capacity):
         self.buffer = deque(maxlen=capacity)
@@ -125,7 +138,7 @@ class DqnAgent:
             done = False
 
             while not done:
-                # self.env.render()
+                self.env.render()
                 epsilon = max(args.epsilon_min, epsilon * args.epsilon_decay)
                 action = self.train_q_net.get_action(state, epsilon)
                 next_state, reward, done, _ = self.env.step(action)
@@ -159,10 +172,10 @@ class DqnAgent:
         )
 
     def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss):
-        print(
-            "[{0}] Episode: {1}(Epsilon: {2:.3f}), Episode reward: {3}, Average episode reward (last 10 episodes): {4:.3f}, Episode loss: {5:.5f}".format(
-                self.__name__, ep, epsilon, episode_reward, avg_episode_reward, episode_loss
-            ))
+        print("[{0}] Episode: {1}(Epsilon: {2:.3f}), Episode reward: {3}, "
+              "Average episode reward (last 10 episodes): {4:.3f}, Episode loss: {5:.5f}, Buffer Size: {6}".format(
+            self.__name__, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, self.buffer.size()
+        ))
 
         with summary_writer.as_default():
             tf.summary.scalar('Episode Reward', episode_reward, step=ep)
@@ -190,6 +203,8 @@ def execution(env, agent, make_video=False):
 
 
 def main():
+    print_args()
+
     env = gym.make('CartPole-v0')
     dqn_agent = DqnAgent(env)
     dqn_agent.learn()
