@@ -130,8 +130,6 @@ class DqnAgent:
                 action = self.train_q_net.get_action(state, epsilon)
                 next_state, reward, done, _ = self.env.step(action)
 
-                print(reward)
-
                 transition = [state, action, reward * 0.01, next_state, done]
                 self.buffer.put(transition)
                 episode_reward += reward
