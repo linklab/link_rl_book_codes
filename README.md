@@ -9,7 +9,7 @@
 - pip install -r requirements.txt --upgrade
 
 ### 3. 추가 Package 설치
-- pip install gym
+- pip install gym[atari]
 
 ### 4. 한글 폰트 설치 참고 사이트
 - https://programmers.co.kr/learn/courses/21/lessons/950
