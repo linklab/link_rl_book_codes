@@ -3,6 +3,8 @@ idx = os.getcwd().index("link_rl_book_codes")
 PROJECT_HOME = os.path.join(os.getcwd()[:idx-1], "link_rl_book_codes")
 sys.path.append(PROJECT_HOME)
 
+import cv2
+
 from PIL import Image
 from gym.spaces import Box
 
@@ -19,26 +21,35 @@ class PongEnv:
         self.observation_space = Box(low=0, high=1, shape=(75, 80, 1))
         self.action_space = self.env.action_space
 
-    def prepro(self, observation):
-        """ prepro 210x160x3 uint8 frame into 6000 (75x80) 1D float vector """
-        observation = observation[35:185]  # crop - remove 35px from start & 25px from end of image in x, to reduce redundant parts of image (i.e. after ball passes paddle)
-        observation = observation[::2, ::2, 0]  # downsample by factor of 2.
+    def downsample(self, observation):
+        s = cv2.cvtColor(observation[35:185, :, :], cv2.COLOR_BGR2GRAY)
+        s = cv2.resize(s, (80, 80), interpolation=cv2.INTER_AREA)
+        s = s / 255.0
+        s = np.expand_dims(s, axis=2)
+        return tf.cast(s, dtype=tf.float32)
 
-        # img = Image.fromarray(observation, 'L')
-        # img.show()
-
-        observation = np.expand_dims(observation, axis=2)
-
-        return tf.cast(observation, dtype=tf.float32)
+    def get_skipped_frames(self, action=None, reset=False, count=4):
+        if reset:
+            observation = self.env.reset()
+            for _ in range(count - 1):
+                action_ = self.env.action_space.sample()
+                observation, _, _, _ = self.env.step(action=action_)
+            observation = self.downsample(observation)
+            return observation
+        else:
+            for _ in range(count - 1):
+                action_ = self.env.action_space.sample()
+                self.env.step(action=action_)
+            observation, reward, done, info = self.env.step(action=action)
+            observation = self.downsample(observation)
+            return observation, reward, done, info
 
     def reset(self):
-        observation = self.env.reset()
-        observation = self.prepro(observation)
+        observation = self.get_skipped_frames(reset=True)
         return observation
 
     def step(self, action):
-        observation, reward, done, info = self.env.step(action=action)
-        observation = self.prepro(observation)
+        observation, reward, done, info = self.get_skipped_frames(action=action)
         return observation, reward, done, info
 
     def render(self, mode='human'):
