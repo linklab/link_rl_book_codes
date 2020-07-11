@@ -15,7 +15,7 @@ class CnnPongQNetwork(tf.keras.Model):
         self.conv1 = kl.Conv2D(filters=64, kernel_size=(3, 3), activation='relu', input_shape=state_dim)
         self.pool1 = kl.MaxPooling2D(pool_size=(2, 2))
         self.conv2 = kl.Conv2D(filters=32, kernel_size=(3, 3), activation='relu')
-        self.pool1 = kl.MaxPooling2D(pool_size=(2, 2))
+        self.pool2 = kl.MaxPooling2D(pool_size=(2, 2))
         self.flat = kl.Flatten()
         self.dense1 = kl.Dense(units=64, activation='relu')
         self.dense2 = kl.Dense(units=32, activation='relu')
@@ -37,12 +37,11 @@ class CnnPongQNetwork(tf.keras.Model):
 
     def forward(self, state):
         z = self.conv1(state)
-        z = self.conv2(z)
         z = self.pool1(z)
-        z = self.drop1(z)
+        z = self.conv2(z)
+        z = self.pool2(z)
         z = self.flat(z)
         z = self.dense1(z)
-        z = self.drop2(z)
         z = self.dense2(z)
 
         value = self.value_output_layer(z)
