@@ -190,7 +190,7 @@ class DqnAgent:
         )
 
     def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss):
-        str_info = "[{0}] Episode: {1}(Epsilon: {2:.3f}), Episode reward: {3}, " \
+        str_info = "[{0}] Episode: {1}, Epsilon: {2:.3f}, Episode reward: {3}, " \
                    "Average episode reward (last 10 episodes): {4:.3f}, Episode loss: {5:.5f}, Buffer Size: {6}".format(
             self.__name__, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, self.buffer.size()
         )

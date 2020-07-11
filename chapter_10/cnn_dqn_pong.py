@@ -32,15 +32,14 @@ class CnnPongQNetwork(tf.keras.Model):
         self.output_layer = kl.Add()
 
         self.num_actions_executed = {}
-        for action in range(action_dim):
+        self.reset_num_actions_executed()
+
+    def reset_num_actions_executed(self):
+        for action in range(self.action_dim):
             if action == 0:
                 self.num_actions_executed[PONG_UP_ACTION] = 0
             else:
                 self.num_actions_executed[PONG_DOWN_ACTION] = 0
-
-    def reset_num_actions_executed(self):
-        for action in range(self.action_dim):
-            self.num_actions_executed[action] = 0
 
     def forward(self, state):
         z = self.conv1(state)
