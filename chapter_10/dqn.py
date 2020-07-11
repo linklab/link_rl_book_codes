@@ -70,9 +70,12 @@ class QNetwork(tf.keras.Model):
         self.hidden_layer_2 = kl.Dense(units=16, activation='relu')
         self.output_layer = kl.Dense(units=action_dim, activation='linear')
 
-        self.num_action_executed = {}
-        for action in range(action_dim):
-            self.num_action_executed[action] = 0
+        self.num_actions_executed = {}
+        self.reset_num_actions_executed()
+
+    def reset_num_actions_executed(self):
+        for action in range(self.action_dim):
+            self.num_actions_executed[action] = 0
 
     def forward(self, state):
         z = self.input_layer(state)
@@ -84,12 +87,12 @@ class QNetwork(tf.keras.Model):
     def get_action(self, state, epsilon):
         if np.random.random() < epsilon:
             action = random.randint(0, self.action_dim - 1)
-            self.num_action_executed[action] += 1
+            self.num_actions_executed[action] += 1
         else:
             state = np.reshape(state, [1, self.state_dim])
             q_value = self.forward(state)[0]
             action = int(np.argmax(q_value))
-            self.num_action_executed[action] += 1
+            self.num_actions_executed[action] += 1
         return action
 
 
@@ -174,6 +177,7 @@ class DqnAgent:
 
             self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss)
             self.episode_reward_list.append(avg_episode_reward)
+            self.train_q_net.reset_num_actions_executed()
 
     def save_model(self):
         self.train_q_net.save_weights(
@@ -191,9 +195,9 @@ class DqnAgent:
             self.__name__, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, self.buffer.size()
         )
 
-        str_info += "Number of actions: "
-        for action in self.train_q_net.num_action_executed:
-            str_info += "[{0}: {1}] ".format(action, self.train_q_net.num_action_executed[action])
+        str_info += ", Number of actions: "
+        for action in self.train_q_net.num_actions_executed:
+            str_info += "[{0}: {1}] ".format(action, self.train_q_net.num_actions_executed[action])
         print(str_info)
 
         with summary_writer.as_default():
