@@ -31,6 +31,13 @@ class CnnPongQNetwork(tf.keras.Model):
 
         self.output_layer = kl.Add()
 
+        self.num_action_executed = {}
+        for action in range(action_dim):
+            if action == 0:
+                self.num_action_executed[PONG_UP_ACTION] = 0
+            else:
+                self.num_action_executed[PONG_DOWN_ACTION] = 0
+
     def forward(self, state):
         z = self.conv1(state)
         z = self.conv2(z)
@@ -51,16 +58,20 @@ class CnnPongQNetwork(tf.keras.Model):
         if np.random.random() < epsilon:
             action = random.randint(0, self.action_dim - 1)
             if action == 0:
+                self.num_action_executed[PONG_UP_ACTION] = 0
                 return PONG_UP_ACTION
             else:
+                self.num_action_executed[PONG_DOWN_ACTION] = 0
                 return PONG_DOWN_ACTION
         else:
             state = tf.expand_dims(state, axis=0)
             q_value = self.forward(state)
             action = np.argmax(q_value)
             if action == 0:
+                self.num_action_executed[PONG_UP_ACTION] = 0
                 return PONG_UP_ACTION
             else:
+                self.num_action_executed[PONG_DOWN_ACTION] = 0
                 return PONG_DOWN_ACTION
 
 
@@ -91,7 +102,7 @@ def main():
     cnn_dqn_agent2.load_model()
     execution(env, cnn_dqn_agent2)
 
-
+# python cnn_dqn_pong.py --max_episodes=1000 --epsilon_decay=0.99999 --replay_memory_capacity=16000 --batch_size=256
 if __name__ == "__main__":
     main()
     # tensorboard --logdir 'logs/advanced_dqn_agent/'
