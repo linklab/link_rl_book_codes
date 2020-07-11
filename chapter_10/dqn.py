@@ -168,7 +168,6 @@ class DqnAgent:
                     episode_loss += self.q_net_optimize()
 
                 state = next_state
-            print()
 
             episode_rewards_last_10.append(episode_reward)
             avg_episode_reward = np.array(episode_rewards_last_10).mean()
@@ -178,6 +177,9 @@ class DqnAgent:
             self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss)
             self.episode_reward_list.append(avg_episode_reward)
             self.train_q_net.reset_num_actions_executed()
+
+            if args.verbose:
+                print()
 
     def save_model(self):
         self.train_q_net.save_weights(
