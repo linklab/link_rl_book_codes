@@ -14,7 +14,7 @@ PONG_DOWN_ACTION = 5
 
 class PongWrappingEnv:
     def __init__(self):
-        self.env = gym.make('Pong-v0')
+        self.env = gym.make('PongDeterministic-v4')
         self.observation_space = Box(low=0, high=1, shape=(75, 80, 1))
         self.action_space = Discrete(n=2)
 
@@ -81,6 +81,7 @@ if __name__ == "__main__":
             action = PONG_DOWN_ACTION
         else:
             raise ValueError()
+
 
         next_state, reward, done, info = env.step(action)
         print("State: {0}, Action: {1}, Next State: {2}, Reward: {3}, Done: {4}, Info: {5}".format(
