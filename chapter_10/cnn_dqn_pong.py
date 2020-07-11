@@ -80,8 +80,8 @@ class CnnDqnAgent(PerDuelingDoubleDqnAgent):
     def __init__(self, env):
         super().__init__(env)
         self.__name__ = "cnn_dqn_agent"
-        self.state_dim = (80, 80)
-        self.action_dim = 2
+        self.state_dim = self.env.observation_space.shape
+        self.action_dim = self.env.action_space.n
 
         self.train_q_net = CnnPongQNetwork(self.state_dim, self.action_dim)
         self.target_q_net = CnnPongQNetwork(self.state_dim, self.action_dim)

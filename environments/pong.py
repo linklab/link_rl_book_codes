@@ -15,14 +15,10 @@ PONG_DOWN_ACTION = 5
 class PongWrappingEnv:
     def __init__(self):
         self.env = gym.make('Pong-v0')
-        self.observation_space = Box(low=0, high=1, shape=(80, 80, 1))
+        self.observation_space = Box(low=0, high=1, shape=(75, 80, 1))
         self.action_space = Discrete(n=2)
 
     def downsample(self, observation):
-        # s = cv2.cvtColor(observation[35:185, :, :], cv2.COLOR_BGR2GRAY)
-        # s = cv2.resize(s, (80, 80), interpolation=cv2.INTER_AREA)
-        # s = s / 255.0
-
         observation = observation[35:185]  # crop - remove 35px from start & 25px from end of image in x, to reduce redundant parts of image (i.e. after ball passes paddle)
         observation = observation[::2, ::2, 0]  # downsample by factor of 2.
 
