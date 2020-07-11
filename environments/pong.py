@@ -2,6 +2,7 @@ import random
 import time
 
 import gym
+from PIL import Image
 from gym.spaces import Box, Discrete
 import cv2
 import tensorflow as tf
@@ -18,11 +19,19 @@ class PongWrappingEnv:
         self.action_space = Discrete(n=2)
 
     def downsample(self, observation):
-        s = cv2.cvtColor(observation[35:185, :, :], cv2.COLOR_BGR2GRAY)
-        s = cv2.resize(s, (80, 80), interpolation=cv2.INTER_AREA)
-        s = s / 255.0
-        s = np.expand_dims(s, axis=2)
-        return tf.cast(s, dtype=tf.float32)
+        # s = cv2.cvtColor(observation[35:185, :, :], cv2.COLOR_BGR2GRAY)
+        # s = cv2.resize(s, (80, 80), interpolation=cv2.INTER_AREA)
+        # s = s / 255.0
+
+        observation = observation[35:185]  # crop - remove 35px from start & 25px from end of image in x, to reduce redundant parts of image (i.e. after ball passes paddle)
+        observation = observation[::2, ::2, 0]  # downsample by factor of 2.
+
+        # img = Image.fromarray(observation, 'L')
+        # img.show()
+
+        observation = np.expand_dims(observation, axis=2)
+
+        return tf.cast(observation, dtype=tf.float32)
 
     def get_skipped_frames(self, action=None, reset=False, count=4):
         if reset:
