@@ -76,7 +76,8 @@ class CnnPongQNetwork(tf.keras.Model):
             else:
                 raise ValueError()
 
-class CnnDqnAgent(PerDuelingDoubleDqnAgent):
+
+class CnnDqnAgent(DqnAgent):
     def __init__(self, env):
         super().__init__(env)
         self.__name__ = "cnn_dqn_agent"
