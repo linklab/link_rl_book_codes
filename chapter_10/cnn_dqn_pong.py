@@ -31,12 +31,12 @@ class CnnPongQNetwork(tf.keras.Model):
 
         self.output_layer = kl.Add()
 
-        self.num_action_executed = {}
+        self.num_actions_executed = {}
         for action in range(action_dim):
             if action == 0:
-                self.num_action_executed[PONG_UP_ACTION] = 0
+                self.num_actions_executed[PONG_UP_ACTION] = 0
             else:
-                self.num_action_executed[PONG_DOWN_ACTION] = 0
+                self.num_actions_executed[PONG_DOWN_ACTION] = 0
 
     def forward(self, state):
         z = self.conv1(state)
@@ -58,20 +58,20 @@ class CnnPongQNetwork(tf.keras.Model):
         if np.random.random() < epsilon:
             action = random.randint(0, self.action_dim - 1)
             if action == 0:
-                self.num_action_executed[PONG_UP_ACTION] = 0
+                self.num_actions_executed[PONG_UP_ACTION] = 0
                 return PONG_UP_ACTION
             else:
-                self.num_action_executed[PONG_DOWN_ACTION] = 0
+                self.num_actions_executed[PONG_DOWN_ACTION] = 0
                 return PONG_DOWN_ACTION
         else:
             state = tf.expand_dims(state, axis=0)
             q_value = self.forward(state)
             action = np.argmax(q_value)
             if action == 0:
-                self.num_action_executed[PONG_UP_ACTION] = 0
+                self.num_actions_executed[PONG_UP_ACTION] = 0
                 return PONG_UP_ACTION
             else:
-                self.num_action_executed[PONG_DOWN_ACTION] = 0
+                self.num_actions_executed[PONG_DOWN_ACTION] = 0
                 return PONG_DOWN_ACTION
 
 
