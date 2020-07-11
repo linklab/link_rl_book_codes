@@ -1,7 +1,7 @@
-import sys, os
-idx = os.getcwd().index("link_rl_book_codes")
-PROJECT_HOME = os.path.join(os.getcwd()[:idx-1], "link_rl_book_codes")
-sys.path.append(PROJECT_HOME)
+# import sys, os
+# idx = os.getcwd().index("link_rl_book_codes")
+# PROJECT_HOME = os.path.join(os.getcwd()[:idx-1], "link_rl_book_codes")
+# sys.path.append(PROJECT_HOME)
 
 from chapter_10.dqn import *
 from chapter_10.per_dueling_double_dqn import PerDuelingDoubleDqnAgent
