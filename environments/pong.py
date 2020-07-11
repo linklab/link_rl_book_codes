@@ -8,7 +8,7 @@ import tensorflow as tf
 import numpy as np
 
 PONG_UP_ACTION = 2
-PONG_DOWN_ACTION = 3
+PONG_DOWN_ACTION = 5
 
 
 class PongWrappingEnv:
@@ -69,7 +69,14 @@ if __name__ == "__main__":
     while not done:
         env.render()
 
-        action = random.randint(PONG_UP_ACTION, PONG_DOWN_ACTION)
+        action = random.randint(0, env.action_space.n - 1)
+        if action == 0:
+            action = PONG_UP_ACTION
+        elif action == 1:
+            action = PONG_DOWN_ACTION
+        else:
+            raise ValueError()
+
         next_state, reward, done, info = env.step(action)
         print("State: {0}, Action: {1}, Next State: {2}, Reward: {3}, Done: {4}, Info: {5}".format(
             state.shape, action, next_state.shape, reward, done, info

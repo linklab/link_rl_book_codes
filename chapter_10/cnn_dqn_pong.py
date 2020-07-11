@@ -1,8 +1,3 @@
-# import sys, os
-# idx = os.getcwd().index("link_rl_book_codes")
-# PROJECT_HOME = os.path.join(os.getcwd()[:idx-1], "link_rl_book_codes")
-# sys.path.append(PROJECT_HOME)
-
 from chapter_10.dqn import *
 from chapter_10.per_dueling_double_dqn import PerDuelingDoubleDqnAgent
 from environments.pong import PongWrappingEnv, PONG_UP_ACTION, PONG_DOWN_ACTION
@@ -63,9 +58,11 @@ class CnnPongQNetwork(tf.keras.Model):
             if action == 0:
                 self.num_actions_executed[PONG_UP_ACTION] += 1
                 return PONG_UP_ACTION
-            else:
+            elif action == 1:
                 self.num_actions_executed[PONG_DOWN_ACTION] += 1
                 return PONG_DOWN_ACTION
+            else:
+                raise ValueError()
         else:
             state = tf.expand_dims(state, axis=0)
             q_value = self.forward(state)
@@ -73,10 +70,11 @@ class CnnPongQNetwork(tf.keras.Model):
             if action == 0:
                 self.num_actions_executed[PONG_UP_ACTION] += 1
                 return PONG_UP_ACTION
-            else:
+            elif action == 1:
                 self.num_actions_executed[PONG_DOWN_ACTION] += 1
                 return PONG_DOWN_ACTION
-
+            else:
+                raise ValueError()
 
 class CnnDqnAgent(PerDuelingDoubleDqnAgent):
     def __init__(self, env):
@@ -105,7 +103,7 @@ def main():
     cnn_dqn_agent2.load_model()
     execution(env, cnn_dqn_agent2)
 
-# python cnn_dqn_pong.py --max_episodes=1000 --epsilon_decay=0.99999 --replay_memory_capacity=16000 --batch_size=256
+# python chapter_10/cnn_dqn_pong.py --max_episodes=1000 --epsilon_decay=0.99999 --replay_memory_capacity=16000 --batch_size=256
 if __name__ == "__main__":
     main()
     # tensorboard --logdir 'logs/advanced_dqn_agent/'
