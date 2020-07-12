@@ -1,4 +1,5 @@
 import random
+import sys
 import time
 
 import gym
@@ -11,6 +12,8 @@ import numpy as np
 PONG_UP_ACTION = 2
 PONG_DOWN_ACTION = 5
 
+np.set_printoptions(threshold=sys.maxsize)
+
 
 class PongWrappingEnv:
     def __init__(self):
@@ -21,12 +24,13 @@ class PongWrappingEnv:
     def downsample(self, observation):
         observation = observation[35:185]  # crop - remove 35px from start & 25px from end of image in x, to reduce redundant parts of image (i.e. after ball passes paddle)
         observation = observation[::2, ::2, 0]  # downsample by factor of 2.
+
         observation[observation == 144] = 0
         observation[observation == 109] = 0
         observation[observation != 0] = 1
 
-        img = Image.fromarray(observation, 'L')
-        img.show()
+        # img = Image.fromarray(observation, 'L')
+        # img.show()
 
         observation = np.expand_dims(observation, axis=2)
 
