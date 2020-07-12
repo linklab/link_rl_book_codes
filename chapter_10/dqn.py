@@ -79,6 +79,9 @@ class QNetwork(tf.keras.Model):
         for action in range(self.action_dim):
             self.num_actions_executed[action] = 0
 
+    def call(self, state, **kwargs):
+        return self.forward(state)
+
     def forward(self, state):
         z = self.input_layer(state)
         z = self.hidden_layer_1(z)
@@ -115,6 +118,15 @@ class DqnAgent:
 
         if not os.path.exists(os.path.join(os.getcwd(), 'models')):
             os.makedirs(os.path.join(os.getcwd(), 'models'))
+
+    def print_q_network(self):
+        if type(self.state_dim) is int:
+            one_input_shape = tuple([1] + [self.state_dim,])
+        else:
+            one_input_shape = tuple([1] + list(self.state_dim))
+        print("one input shape: {0}".format(one_input_shape))
+        self.train_q_net.build(input_shape=one_input_shape)
+        self.train_q_net.summary()
 
     def target_update(self):
         train_q_net_variables = self.train_q_net.trainable_variables
@@ -238,6 +250,7 @@ def main():
 
     env = gym.make('CartPole-v0')
     dqn_agent = DqnAgent(env)
+    dqn_agent.print_q_network()
     dqn_agent.learn()
     dqn_agent.save_model()
 

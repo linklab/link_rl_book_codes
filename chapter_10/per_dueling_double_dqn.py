@@ -156,6 +156,7 @@ def prioritized_experience_memory_test():
 def main():
     env = gym.make('CartPole-v0')
     per_dueling_double_dqn_agent = PerDuelingDoubleDqnAgent(env)
+    per_dueling_double_dqn_agent.print_q_network()
     per_dueling_double_dqn_agent.learn()
     per_dueling_double_dqn_agent.save_model()
 

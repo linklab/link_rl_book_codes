@@ -12,10 +12,10 @@ class CnnPongQNetwork(tf.keras.Model):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.conv1 = kl.Conv2D(filters=32, kernel_size=(8, 8), activation='relu', input_shape=state_dim)
-        self.conv2 = kl.Conv2D(filters=64, kernel_size=(4, 4), activation='relu', input_shape=state_dim)
-        # self.pool1 = kl.MaxPooling2D(pool_size=(2, 2))
-        self.conv3 = kl.Conv2D(filters=64, kernel_size=(3, 3), activation='relu')
-        # self.pool2 = kl.MaxPooling2D(pool_size=(2, 2))
+        self.pool1 = kl.MaxPooling2D(pool_size=(2, 2))
+        self.conv2 = kl.Conv2D(filters=32, kernel_size=(4, 4), activation='relu')
+        self.pool2 = kl.MaxPooling2D(pool_size=(2, 2))
+        self.conv3 = kl.Conv2D(filters=16, kernel_size=(3, 3), activation='relu')
         self.flat = kl.Flatten()
         self.dense1 = kl.Dense(units=512, activation='relu')
         self.dense2 = kl.Dense(units=64, activation='relu')
@@ -35,9 +35,14 @@ class CnnPongQNetwork(tf.keras.Model):
             else:
                 self.num_actions_executed[PONG_DOWN_ACTION] = 0
 
+    def call(self, state, **kwargs):
+        return self.forward(state)
+
     def forward(self, state):
         z = self.conv1(state)
+        z = self.pool1(z)
         z = self.conv2(z)
+        z = self.pool2(z)
         z = self.conv3(z)
         z = self.flat(z)
         z = self.dense1(z)
@@ -86,6 +91,8 @@ class CnnDqnAgent(PerDuelingDoubleDqnAgent):
         self.target_update()
 
 
+
+
 def main():
     print_args()
 
@@ -94,6 +101,7 @@ def main():
     print(env.action_space)
 
     cnn_dqn_agent = CnnDqnAgent(env)
+    cnn_dqn_agent.print_q_network()
     cnn_dqn_agent.learn()
     cnn_dqn_agent.save_model()
 
