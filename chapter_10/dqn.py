@@ -21,6 +21,7 @@ parser.add_argument('--epsilon_min', type=float, default=0.001)
 parser.add_argument('--replay_memory_capacity', type=int, default=8192)
 parser.add_argument('--max_episodes', type=int, default=100)
 parser.add_argument('--verbose', type=bool, default=False)
+parser.add_argument('--train_render', type=bool, default=False)
 args = parser.parse_args()
 
 current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -40,6 +41,7 @@ def print_args():
     print("replay_memory_capacity: {0}".format(args.replay_memory_capacity))
     print("max_episodes: {0}".format(args.max_episodes))
     print("verbose: {0}".format(args.verbose))
+    print("train_render: {0}".format(args.train_render))
     print("##############################################")
 
 
@@ -142,6 +144,8 @@ class DqnAgent:
         episode_rewards_last_10 = deque(maxlen=10)
         epsilon = args.epsilon
 
+        total_steps = 0
+
         for ep in range(args.max_episodes):
             state = self.env.reset()
 
@@ -150,7 +154,8 @@ class DqnAgent:
             done = False
 
             while not done:
-                self.env.render()
+                if args.train_render:
+                    self.env.render()
                 epsilon = max(args.epsilon_min, epsilon * args.epsilon_decay)
                 action = self.train_q_net.get_action(state, epsilon)
                 next_state, reward, done, info = self.env.step(action)
@@ -168,13 +173,14 @@ class DqnAgent:
                     episode_loss += self.q_net_optimize()
 
                 state = next_state
+                total_steps += 1
 
             episode_rewards_last_10.append(episode_reward)
             avg_episode_reward = np.array(episode_rewards_last_10).mean()
 
             self.target_update()
 
-            self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss)
+            self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps)
             self.episode_reward_list.append(avg_episode_reward)
             self.train_q_net.reset_num_actions_executed()
 
@@ -191,10 +197,10 @@ class DqnAgent:
             os.path.join(os.getcwd(), 'models', 'dqn_{0}.tf'.format(self.__name__))
         )
 
-    def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss):
-        str_info = "[{0}] Episode: {1}, Epsilon: {2:.3f}, Episode reward: {3}, " \
-                   "Average episode reward (last 10 episodes): {4:.3f}, Episode loss: {5:.5f}, Buffer Size: {6}".format(
-            self.__name__, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, self.buffer.size()
+    def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps):
+        str_info = "[{0}] Episode: {1}, Eps.: {2:.3f}, Episode reward: {3}, Avg. episode reward (last 10): {4:.3f}, " \
+                   "Episode loss: {5:.5f}, Buffer size: {6}, Total steps: {7}".format(
+            self.__name__, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, self.buffer.size(), total_steps
         )
 
         str_info += ", Number of actions: "
