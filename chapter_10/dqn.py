@@ -20,12 +20,29 @@ parser.add_argument('--epsilon_decay', type=float, default=0.999)
 parser.add_argument('--epsilon_min', type=float, default=0.001)
 parser.add_argument('--replay_memory_capacity', type=int, default=8192)
 parser.add_argument('--max_episodes', type=int, default=100)
+parser.add_argument('--verbose', type=bool, default=False)
+parser.add_argument('--train_render', type=bool, default=False)
 args = parser.parse_args()
 
 current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
 log_dir = 'logs/dqn/' + current_time
 summary_writer = tf.summary.create_file_writer(log_dir)
+
+
+def print_args():
+    print("##############################################")
+    print("gamma: {0}".format(args.gamma))
+    print("learning_rate: {0}".format(args.learning_rate))
+    print("batch_size: {0}".format(args.batch_size))
+    print("epsilon: {0}".format(args.epsilon))
+    print("epsilon_decay: {0}".format(args.epsilon_decay))
+    print("epsilon_min: {0}".format(args.epsilon_min))
+    print("replay_memory_capacity: {0}".format(args.replay_memory_capacity))
+    print("max_episodes: {0}".format(args.max_episodes))
+    print("verbose: {0}".format(args.verbose))
+    print("train_render: {0}".format(args.train_render))
+    print("##############################################")
 
 
 class ReplayMemory:
@@ -55,6 +72,16 @@ class QNetwork(tf.keras.Model):
         self.hidden_layer_2 = kl.Dense(units=16, activation='relu')
         self.output_layer = kl.Dense(units=action_dim, activation='linear')
 
+        self.num_actions_executed = {}
+        self.reset_num_actions_executed()
+
+    def reset_num_actions_executed(self):
+        for action in range(self.action_dim):
+            self.num_actions_executed[action] = 0
+
+    def call(self, state, **kwargs):
+        return self.forward(state)
+
     def forward(self, state):
         z = self.input_layer(state)
         z = self.hidden_layer_1(z)
@@ -64,11 +91,14 @@ class QNetwork(tf.keras.Model):
 
     def get_action(self, state, epsilon):
         if np.random.random() < epsilon:
-            return random.randint(0, self.action_dim - 1)
+            action = random.randint(0, self.action_dim - 1)
+            self.num_actions_executed[action] += 1
         else:
             state = np.reshape(state, [1, self.state_dim])
             q_value = self.forward(state)[0]
-            return np.argmax(q_value)
+            action = int(np.argmax(q_value))
+            self.num_actions_executed[action] += 1
+        return action
 
 
 class DqnAgent:
@@ -88,6 +118,15 @@ class DqnAgent:
 
         if not os.path.exists(os.path.join(os.getcwd(), 'models')):
             os.makedirs(os.path.join(os.getcwd(), 'models'))
+
+    def print_q_network(self):
+        if type(self.state_dim) is int:
+            one_input_shape = tuple([1] + [self.state_dim,])
+        else:
+            one_input_shape = tuple([1] + list(self.state_dim))
+        print("one input shape: {0}".format(one_input_shape))
+        self.train_q_net.build(input_shape=one_input_shape)
+        self.train_q_net.summary()
 
     def target_update(self):
         train_q_net_variables = self.train_q_net.trainable_variables
@@ -117,6 +156,8 @@ class DqnAgent:
         episode_rewards_last_10 = deque(maxlen=10)
         epsilon = args.epsilon
 
+        total_steps = 0
+
         for ep in range(args.max_episodes):
             state = self.env.reset()
 
@@ -125,10 +166,16 @@ class DqnAgent:
             done = False
 
             while not done:
-                # self.env.render()
+                if args.train_render:
+                    self.env.render()
                 epsilon = max(args.epsilon_min, epsilon * args.epsilon_decay)
                 action = self.train_q_net.get_action(state, epsilon)
-                next_state, reward, done, _ = self.env.step(action)
+                next_state, reward, done, info = self.env.step(action)
+
+                if args.verbose:
+                    print("State: {0}, Action: {1}, Next State: {2}, Reward: {3}, Done: {4}, Info: {5}".format(
+                        state.shape, action, next_state.shape, reward, done, info
+                    ))
 
                 transition = [state, action, reward * 0.01, next_state, done]
                 self.buffer.put(transition)
@@ -138,15 +185,19 @@ class DqnAgent:
                     episode_loss += self.q_net_optimize()
 
                 state = next_state
-            print()
+                total_steps += 1
 
             episode_rewards_last_10.append(episode_reward)
             avg_episode_reward = np.array(episode_rewards_last_10).mean()
 
             self.target_update()
 
-            self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss)
+            self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps)
             self.episode_reward_list.append(avg_episode_reward)
+            self.train_q_net.reset_num_actions_executed()
+
+            if args.verbose:
+                print()
 
     def save_model(self):
         self.train_q_net.save_weights(
@@ -158,11 +209,16 @@ class DqnAgent:
             os.path.join(os.getcwd(), 'models', 'dqn_{0}.tf'.format(self.__name__))
         )
 
-    def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss):
-        print(
-            "[{0}] Episode: {1}(Epsilon: {2:.3f}), Episode reward: {3}, Average episode reward (last 10 episodes): {4:.3f}, Episode loss: {5:.5f}".format(
-                self.__name__, ep, epsilon, episode_reward, avg_episode_reward, episode_loss
-            ))
+    def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps):
+        str_info = "[{0}] Episode: {1}, Eps.: {2:.3f}, Episode reward: {3}, Avg. episode reward (last 10): {4:.3f}, " \
+                   "Episode loss: {5:.5f}, Buffer size: {6}, Total steps: {7}".format(
+            self.__name__, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, self.buffer.size(), total_steps
+        )
+
+        str_info += ", Number of actions: "
+        for action in self.train_q_net.num_actions_executed:
+            str_info += "[{0}: {1}] ".format(action, self.train_q_net.num_actions_executed[action])
+        print(str_info)
 
         with summary_writer.as_default():
             tf.summary.scalar('Episode Reward', episode_reward, step=ep)
@@ -190,8 +246,11 @@ def execution(env, agent, make_video=False):
 
 
 def main():
+    print_args()
+
     env = gym.make('CartPole-v0')
     dqn_agent = DqnAgent(env)
+    dqn_agent.print_q_network()
     dqn_agent.learn()
     dqn_agent.save_model()
 

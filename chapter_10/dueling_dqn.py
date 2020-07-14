@@ -19,6 +19,16 @@ class DuelingQNetwork(tf.keras.Model):
 
         self.output_layer = kl.Add()
 
+        self.num_actions_executed = {}
+        self.reset_num_actions_executed()
+
+    def reset_num_actions_executed(self):
+        for action in range(self.action_dim):
+            self.num_actions_executed[action] = 0
+
+    def call(self, state, **kwargs):
+        return self.forward(state)
+
     def forward(self, state):
         z = self.input_layer(state)
         z = self.hidden_layer_1(z)
@@ -51,6 +61,7 @@ class DuelingDqnAgent(DqnAgent):
 def main():
     env = gym.make('CartPole-v0')
     dueling_dqn_agent = DuelingDqnAgent(env)
+    dueling_dqn_agent.print_q_network()
     dueling_dqn_agent.learn()
     dueling_dqn_agent.save_model()
 

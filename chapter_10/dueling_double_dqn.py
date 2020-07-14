@@ -20,6 +20,7 @@ class DuelingDoubleDqnAgent(DoubleDqnAgent):
 def main():
     env = gym.make('CartPole-v0')
     dueling_double_dqn_agent = DuelingDoubleDqnAgent(env)
+    dueling_double_dqn_agent.print_q_network()
     dueling_double_dqn_agent.learn()
     dueling_double_dqn_agent.save_model()
 
