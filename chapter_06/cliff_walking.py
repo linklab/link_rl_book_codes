@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 
 from environments.gridworld import GridWorld
 
@@ -134,7 +133,7 @@ def cumulative_rewards_for_episodes(env):
     rewards_sarsa = np.zeros(episodes)
     rewards_q_learning = np.zeros(episodes)
 
-    for _ in tqdm(range(runs)):
+    for _ in range(runs):
         q_table_expected_sarsa = np.zeros((GRID_HEIGHT, GRID_WIDTH, 4))
         q_table_sarsa = np.zeros((GRID_HEIGHT, GRID_WIDTH, 4))
         q_table_q_learning = np.zeros((GRID_HEIGHT, GRID_WIDTH, 4))
@@ -196,7 +195,7 @@ def cumulative_rewards_for_step_size(env):
     performace = np.zeros((6, len(step_sizes)))
 
     for run in range(runs):
-        for idx, step_size in tqdm(list(zip(range(len(step_sizes)), step_sizes))):
+        for idx, step_size in list(zip(range(len(step_sizes)), step_sizes)):
             q_table_expected_sarsa = np.zeros((GRID_HEIGHT, GRID_WIDTH, 4))
             q_table_sarsa = np.zeros((GRID_HEIGHT, GRID_WIDTH, 4))
             q_table_q_learning = np.zeros((GRID_HEIGHT, GRID_WIDTH, 4))
