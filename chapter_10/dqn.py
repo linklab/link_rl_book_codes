@@ -157,15 +157,18 @@ class DqnAgent:
         epsilon = args.epsilon
 
         total_steps = 0
-
-        for ep in range(args.max_episodes):
+        for ep in range(1, args.max_episodes + 1):
             state = self.env.reset()
 
+            episode_steps = 0
             episode_reward = 0
             episode_loss = 0.0
             done = False
 
             while not done:
+                total_steps += 1
+                episode_steps += 1
+
                 if args.train_render:
                     self.env.render()
                 epsilon = max(args.epsilon_min, epsilon * args.epsilon_decay)
@@ -185,14 +188,14 @@ class DqnAgent:
                     episode_loss += self.q_net_optimize()
 
                 state = next_state
-                total_steps += 1
+
 
             episode_rewards_last_10.append(episode_reward)
             avg_episode_reward = np.array(episode_rewards_last_10).mean()
 
             self.target_update()
 
-            self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps)
+            self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps, episode_steps)
             self.episode_reward_list.append(avg_episode_reward)
             self.train_q_net.reset_num_actions_executed()
 
@@ -209,10 +212,11 @@ class DqnAgent:
             os.path.join(os.getcwd(), 'models', 'dqn_{0}.tf'.format(self.__name__))
         )
 
-    def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps):
+    def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps, episode_steps):
         str_info = "[{0}] Episode: {1}, Eps.: {2:.3f}, Episode reward: {3}, Avg. episode reward (last 10): {4:.3f}, " \
-                   "Episode loss: {5:.5f}, Buffer size: {6}, Total steps: {7}".format(
-            self.__name__, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, self.buffer.size(), total_steps
+                   "Episode loss: {5:.5f}, Buffer size: {6}, Total steps: {7} ({8})".format(
+            self.__name__, ep, epsilon, episode_reward, avg_episode_reward,
+            episode_loss, self.buffer.size(), total_steps, episode_steps
         )
 
         str_info += ", Number of actions: "
