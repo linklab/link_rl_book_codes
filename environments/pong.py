@@ -38,6 +38,8 @@ class PongWrappingEnv:
 
         observation = observation[:, :, None]
 
+        observation = observation / 255
+
         return tf.cast(observation, dtype=tf.float32)
 
     def get_skipped_frames(self, action=None, reset=False, count=4):
