@@ -18,21 +18,27 @@ np.set_printoptions(threshold=sys.maxsize)
 class PongWrappingEnv:
     def __init__(self):
         self.env = gym.make('PongDeterministic-v4')
-        self.observation_space = Box(low=0, high=1, shape=(75, 80, 1))
+        self.observation_space = Box(low=0, high=1, shape=(80, 80, 1))
         self.action_space = Discrete(n=2)
 
     def downsample(self, observation):
-        observation = observation[35:185]  # crop - remove 35px from start & 25px from end of image in x, to reduce redundant parts of image (i.e. after ball passes paddle)
-        observation = observation[::2, ::2, 0]  # downsample by factor of 2.
+        # 오리지널 observation.shape --> (210, 160,3)
 
-        observation[observation == 144] = 0
-        observation[observation == 109] = 0
-        observation[observation != 0] = 1
+        # crop - 위에서 부터 35 픽셀 라인 제거, 아래에서 25 픽셀 라인 제거 (점수와 경계선 제거)
+        observation = observation[35:185]
+
+        # 그레이스케일로 변환
+        observation = cv2.cvtColor(observation, cv2.COLOR_RGB2GRAY)
+
+        # (80 * 80)으로 이미지 변환
+        observation = cv2.resize(observation, (80, 80), interpolation=cv2.INTER_AREA)
 
         # img = Image.fromarray(observation, 'L')
         # img.show()
 
-        observation = np.expand_dims(observation, axis=2)
+        observation = observation[:, :, None]
+
+        observation = observation / 255
 
         return tf.cast(observation, dtype=tf.float32)
 
