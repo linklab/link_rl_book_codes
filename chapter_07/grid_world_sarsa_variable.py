@@ -187,7 +187,7 @@ if __name__ == '__main__':
         height=10,
         width=10,
         start_state=(0, 0),
-        terminal_state=[(9, 9)],
+        terminal_states=[(9, 9)],
         transition_reward=-0.1,
         terminal_reward=1.0
     )

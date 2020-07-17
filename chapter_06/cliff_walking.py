@@ -253,7 +253,7 @@ if __name__ == '__main__':
         height=GRID_HEIGHT,
         width=GRID_WIDTH,
         start_state=START_STATE,
-        terminal_state=TERMINAL_STATES,
+        terminal_states=TERMINAL_STATES,
         transition_reward=-1.0,
         terminal_reward=-1.0,
         outward_reward=-1.0,

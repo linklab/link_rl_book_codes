@@ -37,8 +37,6 @@ class Maze:
         # 최대 타임 스텝
         self.max_steps = float('inf')
 
-        # track the resolution for this maze
-        self.resolution = 1
 
     # take @action in @state
     # @return: [new state, reward]
@@ -63,42 +61,19 @@ class Maze:
 
         return reward, (x, y)
 
-
-# 미로 내 장애물 및 시작 상태, 종료 상태 정보등을 모두 지닌 미로 클래스
-class ChangingMaze(Maze):
-    def __init__(self):
-        super(ChangingMaze, self).__init__()
-        self.original_obstacles = None
-        self.new_obstacles = None
-
-        # 장애물을 변경하는 타임 스텝
-        self.obstacle_switch_time = None
-
-
-    # extend a state to a higher resolution maze
-    # @state: state in lower resoultion maze
-    # @factor: extension factor, one state will become factor^2 states after extension
-    def extend_state(self, state, factor):
-        new_state = [state[0] * factor, state[1] * factor]
-        new_states = []
-        for i in range(0, factor):
-            for j in range(0, factor):
-                new_states.append([new_state[0] + i, new_state[1] + j])
-        return new_states
-
-
-    # extend a state into higher resolution
-    # one state in original maze will become @factor^2 states in @return new maze
-    def extend_maze(self, factor):
-        new_maze = Maze()
-        new_maze.MAZE_WIDTH = self.MAZE_WIDTH * factor
-        new_maze.MAZE_HEIGHT = self.MAZE_HEIGHT * factor
-        new_maze.START_STATE = [self.START_STATE[0] * factor, self.START_STATE[1] * factor]
-        new_maze.GOAL_STATES = self.extend_state(self.GOAL_STATES[0], factor)
-        new_maze.obstacles = []
-        for state in self.obstacles:
-            new_maze.obstacles.extend(self.extend_state(state, factor))
-        new_maze.q_size = (new_maze.MAZE_HEIGHT, new_maze.MAZE_WIDTH, len(new_maze.ACTIONS))
-        new_maze.resolution = factor
-        return new_maze
-
+    def __str__(self):
+        maze_str = ""
+        for i in range(self.MAZE_HEIGHT):
+            maze_str += "-----------------------------------------\n"
+            out = '| '
+            for j in range(self.MAZE_WIDTH):
+                if (i, j) == self.START_STATE:
+                    t = "S"
+                elif (i, j) in self.GOAL_STATES:
+                    t = "G"
+                else:
+                    t = " " if (i, j) not in self.obstacles else "x"
+                out += str("{0}".format(t)) + ' | '
+            maze_str += out + "\n"
+        maze_str += "-----------------------------------------\n"
+        return maze_str

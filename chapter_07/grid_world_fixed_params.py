@@ -91,7 +91,7 @@ def grid_world_n_step_td_for_random_walk():
         height=GRID_HEIGHT,
         width=GRID_WIDTH,
         start_state=(0, 0),
-        terminal_state=TERMINAL_STATES,
+        terminal_states=TERMINAL_STATES,
         transition_reward=-1.0,
         terminal_reward=-1.0,
         outward_reward=-1.0

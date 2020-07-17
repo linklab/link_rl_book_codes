@@ -14,10 +14,9 @@ import gym
 class GridWorld(gym.Env):
     def __init__(
             self,
-            height=5,
-            width=5,
+            height=5, width=5,
             start_state=(0, 0),
-            terminal_state=[(4, 4)],
+            terminal_states=[(4, 4)],
             transition_reward=0.0,
             terminal_reward=1.0,
             outward_reward=-1.0,
@@ -41,7 +40,7 @@ class GridWorld(gym.Env):
             for j in range(self.WIDTH):
                 self.observation_space.STATES.append((i, j))
 
-        for state in terminal_state:     # 터미널 스테이트 제거
+        for state in terminal_states:     # 터미널 스테이트 제거
             self.observation_space.STATES.remove(state)
 
         # 모든 가능한 행동
@@ -62,7 +61,7 @@ class GridWorld(gym.Env):
         self.observation_space.START_STATE = start_state
 
         # 종료 상태 위치
-        self.observation_space.TERMINAL_STATES = terminal_state
+        self.observation_space.TERMINAL_STATES = terminal_states
 
         # 최대 타임 스텝
         self.max_steps = float('inf')
@@ -189,22 +188,31 @@ class GridWorld(gym.Env):
         return (next_i, next_j), reward, done, None
 
     def render(self, mode='human'):
+        print(self.__str__())
+
+    def __str__(self):
+        gridworld_str = ""
         for i in range(self.HEIGHT):
-            print("-------------------------------")
+            gridworld_str += "-------------------------------\n"
 
             for j in range(self.WIDTH):
-                if self.current_state[0] == i and self.current_state[1] == j:
-                    print("|  {0}  ".format("*"), end="")
+                if (i, j) == self.observation_space.START_STATE:
+                    gridworld_str += "|  {0}  ".format("S")
+                elif (i, j) in self.observation_space.TERMINAL_STATES:
+                    gridworld_str += "|  {0}  ".format("G")
+                elif self.current_state[0] == i and self.current_state[1] == j:
+                    gridworld_str += "|  {0}  ".format("*")
                 else:
-                    print("|     ".format("*"), end="")
-            print("|")
+                    gridworld_str += "|     "
+            gridworld_str += "|\n"
 
             for j in range(self.WIDTH):
-                print("|({0},{1})".format(i, j), end="")
-            print("|")
+                gridworld_str += "|({0},{1})".format(i, j)
 
-        print("-------------------------------\n")
+            gridworld_str += "|\n"
 
+        gridworld_str += "-------------------------------\n"
+        return gridworld_str
 
 if __name__ == "__main__":
     env = GridWorld()

@@ -110,7 +110,7 @@ if __name__ == '__main__':
         height=GRID_HEIGHT,
         width=GRID_WIDTH,
         start_state=(0, 0),
-        terminal_state=[],
+        terminal_states=[],
         transition_reward=0,
         outward_reward=-1.0,
         warm_hole_states=[(A_POSITION, A_PRIME_POSITION, 10.0), (B_POSITION, B_PRIME_POSITION, 5.0)]
