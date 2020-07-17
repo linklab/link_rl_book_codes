@@ -91,8 +91,6 @@ class CnnDqnAgent(PerDuelingDoubleDqnAgent):
         self.target_update()
 
 
-
-
 def main():
     print_args()
 
