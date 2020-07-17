@@ -64,7 +64,6 @@ def temporal_difference(env, value, n, alpha):
 
             # 누적 보상(또는 이득)에 상태 가치 추가
             if tau + n < T:
-                # states = [S_0, S_1, S_2, S_3]
                 returns += pow(GAMMA, n) * value[states[(tau + n)]]
 
             state_to_update = states[tau]

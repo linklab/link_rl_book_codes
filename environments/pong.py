@@ -50,35 +50,19 @@ class PongWrappingEnv:
 
         return tf.cast(observation, dtype=tf.float32)
 
-    def get_skipped_frames(self, action=None, reset=False, count=4):
-        if reset:
-            observation = self.env.reset()
-            for _ in range(count - 1):
-                action_ = self.env.action_space.sample()
-                observation, _, _, _ = self.env.step(action=action_)
-            observation = self.downsample(observation)
-            return observation
-        else:
-            for _ in range(count - 1):
-                action_ = self.env.action_space.sample()
-                self.env.step(action=action_)
-            observation, reward, done, info = self.env.step(action=action)
-            observation = self.downsample(observation)
-            return observation, reward, done, info
-
     def reset(self):
         observation = self.env.reset()
         observation = self.downsample(observation)
-        state = observation - self.last_observation
+        next_state = observation - self.last_observation
         self.last_observation = observation
-        return state
+        return next_state
 
     def step(self, action):
         observation, reward, done, info = self.env.step(action=action)
         observation = self.downsample(observation)
-        state = observation - self.last_observation
+        next_state = observation - self.last_observation
         self.last_observation = observation
-        return state, reward, done, info
+        return next_state, reward, done, info
 
     def render(self, mode='human'):
         return self.env.render(mode=mode)
@@ -90,7 +74,7 @@ class PongWrappingEnv:
         return self.env.seed(seed)
 
 
-if __name__ == "__main__":
+def main():
     env = PongWrappingEnv()
     state = env.reset()
     done = False
@@ -113,3 +97,7 @@ if __name__ == "__main__":
 
         state = next_state
         time.sleep(0.25)
+
+
+if __name__ == "__main__":
+    main()

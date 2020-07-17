@@ -80,7 +80,6 @@ def temporal_difference(value, n, alpha):
 
             # 누적 보상(또는 이득)에 상태 가치 추가
             if tau + n < T:
-                # states = [S_0, S_1, S_2, S_3]
                 returns += pow(GAMMA, n) * value[states[(tau + n)]]
 
             state_to_update = states[tau]
@@ -106,10 +105,10 @@ def n_step_td_for_random_walk():
     n = 3
 
     # 스텝 사이즈
-    alpha = 0.1
+    alpha = 0.2
 
     # 가 수행당 1번의 에피소드 수행
-    episodes = 1
+    episodes = 100
 
     # 각 (상태, 스텝 사이즈) 쌍에 대래 오차를 추적함
     errors = 0.0
