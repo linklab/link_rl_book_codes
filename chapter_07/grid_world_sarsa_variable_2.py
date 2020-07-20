@@ -149,10 +149,10 @@ def variable_n_step_sarsa(env, epsilon=0.3, alpha=0.5, gamma=0.98, num_iter=100,
 
                 G = 0
                 for i in range(update_state + 1, min([update_state + n, T]) + 1):
-                    G += (gamma ** (i - update_state - 1)) * reward_trace[i - 1]
+                    G += pow(gamma, i - update_state - 1) * reward_trace[i - 1]
 
                 if update_state + n < T:
-                    G += (gamma ** n) * Q[state_trace[update_state + n], action_trace[update_state + n]]
+                    G += pow(gamma, n) * Q[state_trace[update_state + n], action_trace[update_state + n]]
                 else:
                     n = T - update_state        # terminal state 넘어가는 n값 조정
 
@@ -165,7 +165,7 @@ def variable_n_step_sarsa(env, epsilon=0.3, alpha=0.5, gamma=0.98, num_iter=100,
 
                 update_state += 1
 
-            if update_state == (T - 1):
+            if update_state == T - 1:
                 break
             t += 1
 

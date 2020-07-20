@@ -16,7 +16,7 @@ STEP_N_MAX = 9
 def state_action_value(env):
     q = dict()
     for state in env.observation_space.STATES:
-        for action in env.observation_space.ACTIONS:
+        for action in env.action_space.ACTIONS:
             q[(state, action)] = np.random.normal()
     return q
 
@@ -47,7 +47,7 @@ def generate_greedy_policy(env, Q):
 def e_greedy(env, e, q, state):
     action_values = []
     prob = []
-    for action in env.observation_space.ACTIONS:
+    for action in env.action_space.ACTIONS:
         action_values.append(q[(state, action)])
 
     for i in range(len(action_values)):
@@ -55,7 +55,7 @@ def e_greedy(env, e, q, state):
             prob.append(1 - e + e/len(action_values))
         else:
             prob.append(e/len(action_values))
-    return env.observation_space.ACTIONS, prob
+    return env.action_space.ACTIONS, prob
 
 
 # ε-탐욕적 정책 생성 함수
@@ -98,17 +98,17 @@ def n_step_sarsa(env, epsilon=0.3, alpha=0.5, gamma=0.98, n=3, num_iter=100, lea
             if tau >= 0:
                 G = 0
                 for i in range(tau + 1, min([tau + n, T]) + 1):
-                    G += (gamma ** (i - tau - 1)) * reward_trace[i - 1]
+                    G += pow(gamma, (i - tau - 1)) * reward_trace[i - 1]
 
                 if tau + n < T:
-                    G += (gamma ** n) * Q[state_trace[tau + n], action_trace[tau + n]]
+                    G += pow(gamma, n) * Q[state_trace[tau + n], action_trace[tau + n]]
 
                 Q[state_trace[tau], action_trace[tau]] += alpha * (G - Q[state_trace[tau], action_trace[tau]])
 
                 if learn_policy:
                     policy[state_trace[tau]] = e_greedy(env, epsilon, Q, state_trace[tau])
 
-            if tau == (T - 1):
+            if tau == T - 1:
                 break
             t += 1
 
@@ -143,7 +143,6 @@ if __name__ == '__main__':
 
     plt.xlabel('스텝 사이즈(alpha)')
     plt.ylabel('episode 평균 reward')
-    plt.ylim([-10, -5])
     plt.legend()
 
     plt.savefig('images/n_step_sarsa_for_grid_world.png')
