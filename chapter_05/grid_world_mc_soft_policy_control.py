@@ -63,11 +63,7 @@ class SoftPolicyMonteCarloControl:
         episode = []
         visited_state_actions = []
 
-        # 초기 상태 고정
-        initial_state = (1, 1)
-
-        self.env.moveto(initial_state)
-        state = initial_state
+        state = self.env.reset()  # exploring start
 
         done = False
         while not done:
@@ -174,7 +170,7 @@ def main():
     env = GridWorld(
         height=GRID_HEIGHT,
         width=GRID_WIDTH,
-        start_state=(0, 0),
+        start_state=None,       # exploring start
         terminal_states=TERMINAL_STATES,
         transition_reward=-1.0,
         terminal_reward=-1.0,
@@ -191,7 +187,8 @@ def main():
                 print(
                     i, j,
                     ": UP, DOWN, LEFT, RIGHT",
-                    MC.policy[(i, j)][1]
+                    MC.policy[(i, j)][1],
+                    env.action_space.ACTION_SYMBOLS[np.argmax(MC.target_policy[(i, j)][1])]
                 )
             print()
 

@@ -12,22 +12,12 @@ TERMINAL_STATES = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
 GAMMA = 1
 
 
-def get_exploring_start_state():
-    while True:
-        i = random.randrange(GRID_HEIGHT)
-        j = random.randrange(GRID_WIDTH)
-        if (i, j) not in TERMINAL_STATES:
-            break
-    return (i, j)
-
 # n-스텝 TD 방법
 # @value: 본 함수에 의하여 갱신될 각 상태의 가치
 # @n: n-스텝 TD 방법의 n
 # @alpha: 스텝 사이즈
 def temporal_difference(env, value, n, alpha):
-    # 초기 상태 지정
-    state = get_exploring_start_state()
-    env.moveto(state)
+    state = env.reset() # exploring start
 
     # 에피소드에 대하여 상태와 보상을 저장하는 배열
     states = [state]
@@ -80,7 +70,7 @@ def temporal_difference(env, value, n, alpha):
             state = next_state
 
 
-def grid_world_n_step_td_for_random_walk():
+def main():
     # 이미지 저장 경로 확인 및 생성
     if not os.path.exists('images/'):
         os.makedirs('images/')
@@ -89,7 +79,7 @@ def grid_world_n_step_td_for_random_walk():
     env = GridWorld(
         height=GRID_HEIGHT,
         width=GRID_WIDTH,
-        start_state=(0, 0),
+        start_state=None,    # exploring start
         terminal_states=TERMINAL_STATES,
         transition_reward=-1.0,
         terminal_reward=-1.0,
@@ -118,4 +108,4 @@ def grid_world_n_step_td_for_random_walk():
 
 
 if __name__ == '__main__':
-    grid_world_n_step_td_for_random_walk()
+    main()

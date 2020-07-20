@@ -47,3 +47,16 @@ def draw_grid_world_image(values, filename, grid_height, grid_width):
 
     plt.savefig(filename)
     plt.close()
+
+
+def print_grid_world_policy(env, policy):
+    with np.printoptions(precision=2, suppress=True):
+        for i in range(env.HEIGHT):
+            for j in range(env.WIDTH):
+                if (i, j) not in env.observation_space.TERMINAL_STATES:
+                    print(
+                        "({0}, {1}): UP, DOWN, LEFT, RIGHT".format(i, j),
+                        policy[(i, j)][1],
+                        env.action_space.ACTION_SYMBOLS[np.argmax(policy[(i, j)][1])]
+                    )
+            print()

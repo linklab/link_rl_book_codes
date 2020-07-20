@@ -49,22 +49,12 @@ class MonteCarloControl:
 
         return policy
 
-    def get_explorering_start_state(self):
-        while True:
-            i = random.randrange(GRID_HEIGHT)
-            j = random.randrange(GRID_WIDTH)
-            if (i, j) not in TERMINAL_STATES:
-                break
-        return (i, j)
-
     # 환경에서 현재 정책에 입각하여 에피소드(현재 상태, 행동, 다음 상태, 보상) 생성
     def generate_random_episode(self):
         episode = []
         visited_state_actions = []
 
-        initial_state = self.get_explorering_start_state()
-        self.env.moveto(initial_state)
-        state = initial_state
+        state = self.env.reset() # exploring start
 
         done = False
         trajectory_size = 0
@@ -163,13 +153,12 @@ def main():
     env = GridWorld(
         height=GRID_HEIGHT,
         width=GRID_WIDTH,
-        start_state=(0, 0),
+        start_state=None,   # exploring start
         terminal_states=TERMINAL_STATES,
         transition_reward=-1.0,
         terminal_reward=-1.0,
         outward_reward=-1.0
     )
-    env.reset()
 
     MC = MonteCarloControl(env)
     MC.exploring_start_control()

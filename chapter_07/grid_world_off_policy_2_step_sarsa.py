@@ -5,6 +5,7 @@ import matplotlib as mpl
 import pickle
 
 from environments.gridworld import GridWorld
+from utils.util import print_grid_world_policy
 
 plt.rcParams["font.family"] = 'AppleGothic'
 plt.rcParams["font.size"] = 12
@@ -16,9 +17,9 @@ TERMINAL_STATES = [(0, 0), (GRID_HEIGHT-1, GRID_WIDTH-1)]
 
 # 초기 하이퍼파라미터 설정: ε=0.2, α=0.5, γ=0.98, n-스텝 = 3, 에피소드 수행 횟수 = 100
 EPSILON = 0.2
-ALPHA = 0.5
+ALPHA = 0.1
 GAMMA = 0.98
-MAX_EPISODES = 100
+MAX_EPISODES = 10000
 
 
 # 행동-가치 함수 생성
@@ -53,8 +54,30 @@ def generate_e_greedy_policy(env, e, Q):
     return policy
 
 
+# ε-탐욕적 정책 생성 함수
+def generate_greedy_policy(env, Q):
+    policy = dict()
+    for state in env.observation_space.STATES:
+        policy[state] = e_greedy(env, 0.0, Q, state)
+    return policy
+
+
+# 모든 상태에서 수행 가능한 행동에 맞춰 임의의 정책을 생성함
+# 각 행동의 선택 확률은 모두 같음
+def generate_random_policy(env):
+    policy = dict()
+    for state in env.observation_space.STATES:
+        actions = []
+        prob = []
+        for action in env.action_space.ACTIONS:
+            actions.append(action)
+            prob.append(0.25)
+        policy[state] = (actions, prob)
+    return policy
+
+
 # n-스텝 SARSA 함수
-def n_step_sarsa(env, Q, policy, n):
+def n_step_off_policy_td(env, Q, policy, b, n):
     episode_reward_list = []
 
     for episode in range(MAX_EPISODES):
@@ -68,17 +91,16 @@ def n_step_sarsa(env, Q, policy, n):
         # 이 에피소드의 길이
         T = float('inf')
 
-        # SARSA == STATE ACTION REWARD STATE ACTION
         while True:
             if time_step < T:
                 next_state, reward, done, _ = env.step(action)
                 reward_trace.append(reward)
 
-                if done:
+                if next_state in TERMINAL_STATES:
                     T = time_step + 1
                 else:
                     state_trace.append(next_state)
-                    next_action = np.random.choice(policy[next_state][0], p=policy[next_state][1])
+                    next_action = np.random.choice(b[next_state][0], p=b[next_state][1])
                     action_trace.append(next_action)
                     action = next_action
 
@@ -86,7 +108,11 @@ def n_step_sarsa(env, Q, policy, n):
             tau = time_step - n + 1
 
             if tau >= 0:     # update_state 시작위치부터 n개를 reward_trace[]에서 가져와야 하기 때문
-                # print(len(state_trace), len(action_trace), len(reward_trace)
+                rho = 1
+                for i in range(tau + 1, min([tau + n - 1, T - 1]) + 1):
+                    y = policy[state_trace[i]][1][action_trace[i]]
+                    x = b[state_trace[i]][1][action_trace[i]]
+                    rho *= y / x
 
                 G = 0
                 for i in range(tau + 1, min([tau + n, T]) + 1):
@@ -95,18 +121,19 @@ def n_step_sarsa(env, Q, policy, n):
                 if tau + n < T:
                     G += pow(GAMMA, n) * Q[state_trace[tau + n], action_trace[tau + n]]
 
-                Q[state_trace[tau], action_trace[tau]] += ALPHA * (G - Q[state_trace[tau], action_trace[tau]])
+                Q[state_trace[tau], action_trace[tau]] += ALPHA * rho * (G - Q[state_trace[tau], action_trace[tau]])
 
-                policy[state_trace[tau]] = e_greedy(env, EPSILON, Q, state_trace[tau])
+                if state_trace[tau] not in TERMINAL_STATES:
+                    policy[state_trace[tau]] = e_greedy(env, EPSILON, Q, state_trace[tau])
 
             if tau == T - 1:
                 break
 
             time_step += 1
-            state = next_state
 
         episode_reward = sum(reward_trace)
         episode_reward_list.append(episode_reward)
+        print("EPISODE[{0}] Episode Reward: {1}".format(episode, episode_reward))
 
     return policy, np.asarray(episode_reward_list)
 
@@ -116,48 +143,25 @@ def main():
     env = GridWorld(
         height=GRID_HEIGHT,
         width=GRID_WIDTH,
-        start_state=None,       # exploring start
+        start_state=None,   # exploring start
         terminal_states=TERMINAL_STATES,
         transition_reward=-1.0,
         terminal_reward=-1.0,
         outward_reward=-1.0
     )
 
-    runs = 10
-    step_n = [1, 2, 4, 8, 16]
-    data = np.zeros(shape=(len(step_n), MAX_EPISODES))
+    Q = state_action_value(env)
 
-    for run in range(runs):
-        print("RUNS: {0}".format(run))
-        for idx_n, n in enumerate(step_n):
-            Q = state_action_value(env)
-            policy = generate_e_greedy_policy(env, EPSILON, Q)
+    # EPSILON-Greedy 정책 생성
+    policy = generate_e_greedy_policy(env, EPSILON, Q)
 
-            print("n={0} ".format(n), end=" ")
+    # 무작위 정책 생성
+    b = generate_random_policy(env)
 
-            _, episode_reward_list = n_step_sarsa(env, Q, policy, n)
+    policy, episode_reward_list = n_step_off_policy_td(env, Q, policy, b, 2)
 
-            avg_episode_reward_list = []
-            for episode in range(MAX_EPISODES):
-                avg_episode_reward_list.append(episode_reward_list[max(0, episode - 10):(episode + 1)].mean())
-
-            for idx in range(MAX_EPISODES):
-                data[idx_n, idx] += avg_episode_reward_list[idx]
-
-        print()
-
-    data[:, :] /= runs
-
-    marker = ['o', 'x', '.', 's', '*', '+', '|', '^', 'D', ' ']
-    for idx_n, n in enumerate(step_n):
-        plt.plot(range(0, MAX_EPISODES, 5), data[idx_n, ::5], marker=marker[idx_n], label='n = {0}'.format(step_n[idx_n]))
-
-    plt.xlabel('에피소드')
-    plt.ylabel('에피소드별 평균 리워드')
-    plt.legend()
-
-    plt.savefig('images/n_step_sarsa.png')
-    plt.close()
+    # print policy
+    print_grid_world_policy(env, policy)
 
 
 if __name__ == '__main__':

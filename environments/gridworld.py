@@ -1,3 +1,4 @@
+import random
 import time
 
 import gym
@@ -75,8 +76,20 @@ class GridWorld(gym.Env):
         self.current_state = None
 
     def reset(self):
-        self.current_state = self.observation_space.START_STATE
+        if self.observation_space.START_STATE is None:
+            self.current_state = self.get_exploring_start_state()
+        else:
+            self.current_state = self.observation_space.START_STATE
+
         return self.current_state
+
+    def get_exploring_start_state(self):
+        while True:
+            i = random.randrange(self.HEIGHT)
+            j = random.randrange(self.WIDTH)
+            if (i, j) not in self.observation_space.TERMINAL_STATES:
+                break
+        return i, j
 
     def moveto(self, state):
         self.current_state = state

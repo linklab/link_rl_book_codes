@@ -1,7 +1,7 @@
 # 사용 패키지 임포트
 import numpy as np
 from environments.gridworld import GridWorld
-from utils.util import softmax
+from utils.util import softmax, print_grid_world_policy
 
 GRID_HEIGHT = 4
 GRID_WIDTH = 4
@@ -77,16 +77,10 @@ class OffPolicyMonteCarloControl:
         episode = []
         visited_state_actions = []
 
-        # i = random.randrange(GRID_HEIGHT)
-        # j = random.randrange(GRID_WIDTH)
-        # initial_state = (i, j)
-
-        initial_state = (1, 1)
-
-        self.env.moveto(initial_state)
-        state = initial_state
+        state = self.env.reset()    # exploring start
 
         done = False
+
         while not done:
             actions, prob = behavior_policy[state]
             action = np.random.choice(actions, size=1, p=prob)[0]
@@ -154,7 +148,7 @@ def main():
     env = GridWorld(
         height=GRID_HEIGHT,
         width=GRID_WIDTH,
-        start_state=(0, 0),
+        start_state=None,       # exploring start
         terminal_states=TERMINAL_STATES,
         transition_reward=-1.0,
         terminal_reward=-1.0,
@@ -165,15 +159,7 @@ def main():
     MC = OffPolicyMonteCarloControl(env)
     MC.off_policy_control()
 
-    with np.printoptions(precision=2, suppress=True):
-        for i in range(GRID_HEIGHT):
-            for j in range(GRID_WIDTH):
-                print(
-                    i, j,
-                    ": UP, DOWN, LEFT, RIGHT",
-                    MC.target_policy[(i, j)][1]
-                )
-            print()
+    print_grid_world_policy(env,MC.target_policy)
 
 
 if __name__ == "__main__":

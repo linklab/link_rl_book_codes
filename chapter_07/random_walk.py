@@ -73,7 +73,6 @@ def temporal_difference(value, n, alpha):
 
         if tau >= 0:
             returns = 0.0
-
             # 대응되는 누적 보상(또는 이득)
             for i in range(tau + 1, min(tau + n, T) + 1):
                 returns += pow(GAMMA, i - tau - 1) * rewards[i]
