@@ -109,6 +109,7 @@ class DqnAgent:
         self.action_dim = self.env.action_space.n
 
         self.optimizer = tf.optimizers.Adam(args.learning_rate)
+
         self.train_q_net = QNetwork(self.state_dim, self.action_dim)
         self.target_q_net = QNetwork(self.state_dim, self.action_dim)
         self.target_update()
@@ -148,7 +149,6 @@ class DqnAgent:
 
         variables = self.train_q_net.trainable_variables
         gradients = tape.gradient(loss, variables)
-        print(gradients.shape)
         self.optimizer.apply_gradients(zip(gradients, variables))
 
         return loss.numpy()
