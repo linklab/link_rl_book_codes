@@ -51,6 +51,7 @@ class PongWrappingEnv:
         return tf.cast(observation, dtype=tf.float32)
 
     def reset(self):
+        self.last_observation = np.zeros(shape=(80, 80, 1))
         observation = self.env.reset()
         observation = self.downsample(observation)
         next_state = observation - self.last_observation

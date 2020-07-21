@@ -148,6 +148,7 @@ class DqnAgent:
 
         variables = self.train_q_net.trainable_variables
         gradients = tape.gradient(loss, variables)
+        print(gradients.shape)
         self.optimizer.apply_gradients(zip(gradients, variables))
 
         return loss.numpy()
