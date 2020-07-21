@@ -11,14 +11,12 @@ class CnnPongQNetwork(tf.keras.Model):
         super(CnnPongQNetwork, self).__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
-        self.conv1 = kl.Conv2D(filters=32, kernel_size=(8, 8), activation='relu', input_shape=state_dim)
-        self.pool1 = kl.MaxPooling2D(pool_size=(2, 2))
-        self.conv2 = kl.Conv2D(filters=32, kernel_size=(4, 4), activation='relu')
-        self.pool2 = kl.MaxPooling2D(pool_size=(2, 2))
-        self.conv3 = kl.Conv2D(filters=16, kernel_size=(3, 3), activation='relu')
+
+        self.conv1 = kl.Conv2D(filters=32, kernel_size=(8, 8), strides=(4, 4), activation='relu', input_shape=state_dim)
+        self.conv2 = kl.Conv2D(filters=64, kernel_size=(4, 4), strides=(2, 2), activation='relu')
+        self.conv3 = kl.Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), activation='relu')
         self.flat = kl.Flatten()
         self.dense1 = kl.Dense(units=512, activation='relu')
-        self.dense2 = kl.Dense(units=64, activation='relu')
 
         self.value_output_layer = kl.Dense(units=1, activation='linear')
         self.advantage_output_layer = kl.Dense(units=action_dim, activation='linear')
@@ -40,13 +38,10 @@ class CnnPongQNetwork(tf.keras.Model):
 
     def forward(self, state):
         z = self.conv1(state)
-        z = self.pool1(z)
         z = self.conv2(z)
-        z = self.pool2(z)
         z = self.conv3(z)
         z = self.flat(z)
         z = self.dense1(z)
-        z = self.dense2(z)
 
         value = self.value_output_layer(z)
         advantage = self.advantage_output_layer(z)
