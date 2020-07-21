@@ -77,32 +77,31 @@ def generate_random_policy(env):
 
 
 # n-스텝 SARSA 함수
-def n_step_off_policy_td(env, Q, policy, b, n):
+def n_step_q_learning(env, Q, greedy_policy, policy, n):
     episode_reward_list = []
 
     for episode in range(MAX_EPISODES):
         state = env.reset()     # exploring start
-        action = np.random.choice(policy[state][0], p=policy[state][1])
-        state_trace, action_trace, reward_trace = [state], [action], []
 
         # 타임 스텝
         time_step = 0
 
         # 이 에피소드의 길이
         T = float('inf')
-
+        state_trace, action_trace, reward_trace = [], [], []
         while True:
             if time_step < T:
+                action = np.random.choice(policy[state][0], p=policy[state][1])
+                state_trace.append(state)
+                action_trace.append(action)
+
                 next_state, reward, done, _ = env.step(action)
                 reward_trace.append(reward)
 
                 if next_state in TERMINAL_STATES:
                     T = time_step + 1
                 else:
-                    state_trace.append(next_state)
-                    next_action = np.random.choice(b[next_state][0], p=b[next_state][1])
-                    action_trace.append(next_action)
-                    action = next_action
+                    state = next_state
 
             # 갱신을 수행할 타임 스텝 결정
             tau = time_step - n + 1
@@ -110,8 +109,8 @@ def n_step_off_policy_td(env, Q, policy, b, n):
             if tau >= 0:     # update_state 시작위치부터 n개를 reward_trace[]에서 가져와야 하기 때문
                 rho = 1
                 for i in range(tau + 1, min([tau + n - 1, T - 1]) + 1):
-                    y = policy[state_trace[i]][1][action_trace[i]]
-                    x = b[state_trace[i]][1][action_trace[i]]
+                    y = greedy_policy[state_trace[i]][1][action_trace[i]]
+                    x = policy[state_trace[i]][1][action_trace[i]]
                     rho *= y / x
 
                 G = 0
@@ -119,12 +118,16 @@ def n_step_off_policy_td(env, Q, policy, b, n):
                     G += pow(GAMMA, (i - tau - 1)) * reward_trace[i - 1]
 
                 if tau + n < T:
-                    G += pow(GAMMA, n) * Q[state_trace[tau + n], action_trace[tau + n]]
+                    action_values = []
+                    for action in env.action_space.ACTIONS:
+                        action_values.append(Q[(state_trace[-1], action)])
+                    G += pow(GAMMA, n) * np.max(action_values)
 
                 Q[state_trace[tau], action_trace[tau]] += ALPHA * rho * (G - Q[state_trace[tau], action_trace[tau]])
 
                 if state_trace[tau] not in TERMINAL_STATES:
-                    policy[state_trace[tau]] = e_greedy(env, EPSILON, Q, state_trace[tau])
+                    policy[state_trace[tau]] = e_greedy(env, EPSILON, Q, state_trace[tau])      # e-greedy
+                    greedy_policy[state_trace[tau]] = e_greedy(env, 0.0, Q, state_trace[tau])   # greedy
 
             if tau == T - 1:
                 break
@@ -155,10 +158,9 @@ def main():
     # EPSILON-Greedy 정책 생성
     policy = generate_e_greedy_policy(env, EPSILON, Q)
 
-    # 무작위 정책 생성
-    b = generate_random_policy(env)
+    greedy_policy = generate_greedy_policy(env, Q)
 
-    policy, episode_reward_list = n_step_off_policy_td(env, Q, policy, b, 2)
+    policy, episode_reward_list = n_step_q_learning(env, Q, greedy_policy, policy, 4)
 
     # print policy
     print_grid_world_policy(env, policy)
