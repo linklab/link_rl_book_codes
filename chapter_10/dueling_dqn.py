@@ -42,12 +42,14 @@ class DuelingQNetwork(tf.keras.Model):
 
     def get_action(self, state, epsilon):
         if np.random.random() < epsilon:
-            return random.randint(0, self.action_dim - 1)
+            action = random.randint(0, self.action_dim - 1)
         else:
             state = np.reshape(state, [1, self.state_dim])
             q_value = self.forward(state)[0]
-            return np.argmax(q_value)
+            action = int(np.argmax(q_value))
 
+        self.num_actions_executed[action] += 1
+        return action
 
 class DuelingDqnAgent(DqnAgent):
     def __init__(self, env):

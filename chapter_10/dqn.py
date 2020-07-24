@@ -13,13 +13,13 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gamma', type=float, default=0.99)
-parser.add_argument('--learning_rate', type=float, default=0.005)
+parser.add_argument('--learning_rate', type=float, default=0.00025)
 parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--epsilon', type=float, default=1.0)
-parser.add_argument('--epsilon_decay', type=float, default=0.999)
-parser.add_argument('--epsilon_min', type=float, default=0.001)
-parser.add_argument('--replay_memory_capacity', type=int, default=8192)
-parser.add_argument('--max_episodes', type=int, default=100)
+parser.add_argument('--epsilon_init', type=float, default=1.0)
+parser.add_argument('--epsilon_min', type=float, default=0.01)
+parser.add_argument('--replay_memory_capacity', type=int, default=500000)
+parser.add_argument('--max_episodes', type=int, default=20000)
+parser.add_argument('--target_net_update_freq', type=int, default=1000)
 parser.add_argument('--verbose', type=bool, default=False)
 parser.add_argument('--train_render', type=bool, default=False)
 args = parser.parse_args()
@@ -35,14 +35,21 @@ def print_args():
     print("gamma: {0}".format(args.gamma))
     print("learning_rate: {0}".format(args.learning_rate))
     print("batch_size: {0}".format(args.batch_size))
-    print("epsilon: {0}".format(args.epsilon))
-    print("epsilon_decay: {0}".format(args.epsilon_decay))
+    print("epsilon_init: {0}".format(args.epsilon_init))
     print("epsilon_min: {0}".format(args.epsilon_min))
     print("replay_memory_capacity: {0}".format(args.replay_memory_capacity))
     print("max_episodes: {0}".format(args.max_episodes))
+    print("target_net_update_freq: {0}".format(args.target_net_update_freq))
     print("verbose: {0}".format(args.verbose))
     print("train_render: {0}".format(args.train_render))
     print("##############################################")
+
+
+def linear_interpolation(start_step, end_step, current_step, final_p, initial_p):
+    schedule_timesteps = end_step - start_step
+    step_offset = current_step - start_step
+    fraction = min(float(step_offset) / schedule_timesteps, 1)
+    return min(initial_p + fraction * (final_p - initial_p), initial_p)
 
 
 class ReplayMemory:
@@ -92,12 +99,12 @@ class QNetwork(tf.keras.Model):
     def get_action(self, state, epsilon):
         if np.random.random() < epsilon:
             action = random.randint(0, self.action_dim - 1)
-            self.num_actions_executed[action] += 1
         else:
             state = np.reshape(state, [1, self.state_dim])
             q_value = self.forward(state)[0]
             action = int(np.argmax(q_value))
-            self.num_actions_executed[action] += 1
+
+        self.num_actions_executed[action] += 1
         return action
 
 
@@ -156,7 +163,7 @@ class DqnAgent:
 
     def learn(self):
         episode_rewards_last_10 = deque(maxlen=10)
-        epsilon = args.epsilon
+        epsilon = args.epsilon_init
 
         total_steps = 0
         for ep in range(1, args.max_episodes + 1):
@@ -173,7 +180,14 @@ class DqnAgent:
 
                 if args.train_render:
                     self.env.render()
-                epsilon = max(args.epsilon_min, epsilon * args.epsilon_decay)
+
+                epsilon = linear_interpolation(
+                    start_step=0,
+                    end_step=1000000,
+                    current_step=total_steps,
+                    final_p=args.epsilon_min, initial_p=args.epsilon_init
+                )
+
                 action = self.train_q_net.get_action(state, epsilon)
                 next_state, reward, done, info = self.env.step(action)
 
@@ -198,13 +212,13 @@ class DqnAgent:
                 if self.buffer.size() >= args.batch_size:
                     episode_loss += self.q_net_optimize()
 
-                state = next_state
+                if total_steps % args.target_net_update_freq == 0:
+                    self.target_update()
 
+                state = next_state
 
             episode_rewards_last_10.append(episode_reward)
             avg_episode_reward = np.array(episode_rewards_last_10).mean()
-
-            self.target_update()
 
             self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps, episode_steps)
             self.episode_reward_list.append(avg_episode_reward)

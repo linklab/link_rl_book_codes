@@ -117,10 +117,6 @@ class PerDuelingDoubleDqnAgent(DuelingDoubleDqnAgent):
         batch, idxs, is_weight = self.buffer.get_random_batch(args.batch_size)
         states, actions, rewards, next_states, dones = map(np.asarray, zip(*batch))
 
-        # selected_actions = np.argmax(self.train_q_net.forward(next_states), axis=1)
-        # next_q_values = tf.math.reduce_sum(
-        #     self.target_q_net.forward(next_states) * tf.one_hot(selected_actions, self.action_dim), axis=1
-        # )
         next_q_values = np.where(dones, 0, np.max(self.target_q_net.forward(next_states), axis=1))
         target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
 
