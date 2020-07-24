@@ -1,4 +1,5 @@
 import random
+import time
 
 import gym
 from gym import spaces
@@ -11,6 +12,7 @@ BOARD_ROWS = 3
 BOARD_COLS = 3
 
 ALL_STATES = {}
+
 
 ################################################################
 # 플레이어 1,2 간의 게임 진행을 담당하는 Env 클래스
@@ -68,6 +70,7 @@ class TicTacToe(gym.Env):
 
     def render(self, mode='human'):
         self.current_state.print_board()
+        print()
 
     # 주어진 상태 및 현재 플레이어 심볼에 대하여 발생 가능한 모든 게임 상태 집합 생성
     def generate_all_states(self, state, player_int):
@@ -199,21 +202,24 @@ class State:
 
 def main():
     env = TicTacToe()
-
     print("INITIAL_STATE: {0}".format(env.INITIAL_STATE))
     print("NUMBER OF ALL STATES: {0}".format(len(ALL_STATES)))
-
     state = env.reset()
+    env.render()
 
     done = False
+    total_steps = 0
     while not done:
+        total_steps += 1
         action = random.choice(state.get_available_positions())
         next_state, reward, done, info = env.step(action)
+        print("action: {0}, reward: {1}, done: {2}, info: {3}, total_steps: {4}".format(
+            action, reward, done, info, total_steps
+        ))
         env.render()
-        print("reward: {0}, done: {1}, info: {2}".format(reward, done, info))
-        print()
 
         state = next_state
+        time.sleep(3)
 
 
 if __name__ == "__main__":

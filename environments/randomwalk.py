@@ -10,10 +10,10 @@ import gym
 class RandomWalk(gym.Env):
     def __init__(
             self,
-            num_internal_states=5,
-            transition_reward=0.0,
-            left_terminal_reward=0.0,
-            right_terminal_reward=1.0
+            num_internal_states=5,         # 종료 상태를 제외한 내부 상태 개수
+            transition_reward=0.0,         # 일반적인 상태 전이 보상
+            left_terminal_reward=0.0,      # 왼쪽 종료 상태로 이동하는 행동 수행 시 받는 보상
+            right_terminal_reward=1.0      # 오른쪽 종료 상태로 이동하는 행동 수행 시 받는 보상
     ):
         self.__version__ = "0.0.1"
 
@@ -110,7 +110,12 @@ class RandomWalk(gym.Env):
         return next_state, reward, done, None
 
     def render(self, mode='human'):
-        print(" T1 " + " ".join(["{0}".format(i) for i in range(self.num_internal_states)]) + " T2")
+        print(self.__str__(), end="\n\n")
+
+    def __str__(self):
+        randomwalk_str = ""
+        randomwalk_str += " T1 " + " ".join(["{0}".format(i) for i in range(self.num_internal_states)]) + " T2\n"
+
         if self.current_state in self.observation_space.STATES:
             blank = "    " + "  " * self.current_state
         elif self.current_state == 'T1':
@@ -120,21 +125,30 @@ class RandomWalk(gym.Env):
         else:
             raise ValueError()
 
-        print(blank + str(self.current_state), flush=True)
-        print()
+        randomwalk_str += blank + "*"
+
+        return randomwalk_str
 
 
 def main():
     env = RandomWalk()
     env.reset()
+    print("reset")
     env.render()
 
     done = False
+    total_steps = 0
     while not done:
+        total_steps += 1
         action = env.action_space.sample()
         next_state, reward, done, _ = env.step(action)
+        print("action: {0}, reward: {1}, done: {2}, total_steps: {3}".format(
+            env.action_space.ACTION_SYMBOLS[action],
+            reward, done, total_steps
+        ))
         env.render()
-        time.sleep(1)
+
+        time.sleep(3)
 
 
 if __name__ == "__main__":

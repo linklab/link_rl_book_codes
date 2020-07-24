@@ -10,6 +10,8 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 
+NUM_STACKED_FRAMES = 4
+PONG_NOOP = 0
 PONG_UP_ACTION = 2
 PONG_DOWN_ACTION = 5
 
@@ -18,10 +20,10 @@ np.set_printoptions(threshold=sys.maxsize)
 
 class PongWrappingEnv:
     def __init__(self):
-        self.env = gym.make('PongDeterministic-v4')
-        self.observation_space = Box(low=0, high=1, shape=(80, 80, 1))
+        self.env = gym.make('PongDeterministic-v0')
+        self.observation_space = Box(low=0, high=1, shape=(80, 80, 4))
         self.action_space = Discrete(n=2)
-        self.last_observation = np.zeros(shape=(80, 80, 1))
+        self.env_name = 'pong'
 
     def downsample(self, observation):
         """
@@ -46,24 +48,58 @@ class PongWrappingEnv:
         # plt.imshow(observation, 'gray')
         # plt.show()
 
-        observation = observation[:, :, None]
+        observation = observation[:, :]
 
         return tf.cast(observation, dtype=tf.float32)
 
     def reset(self):
-        self.last_observation = np.zeros(shape=(80, 80, 1))
         observation = self.env.reset()
         observation = self.downsample(observation)
-        next_state = observation - self.last_observation
-        self.last_observation = observation
-        return next_state
+        stacked_observations = [observation]
+
+        for _ in range(NUM_STACKED_FRAMES - 1):
+            observation, reward, done, info = self.env.step(PONG_NOOP)
+            observation = self.downsample(observation)
+            stacked_observations.append(observation)
+
+        stacked_observations = np.stack(stacked_observations, axis=2)
+
+        return stacked_observations
 
     def step(self, action):
         observation, reward, done, info = self.env.step(action=action)
         observation = self.downsample(observation)
-        next_state = observation - self.last_observation
-        self.last_observation = observation
-        return next_state, reward, done, info
+        stacked_observations = [observation]
+        stacked_rewards = [reward]
+        if done:
+            for _ in range(NUM_STACKED_FRAMES - 1):
+                stacked_observations.append(np.zeros(shape=(80, 80)))
+            observation = np.stack(stacked_observations, axis=2)
+            sum_rewards = np.sum(stacked_rewards)
+            info["sum_rewards"] = sum_rewards
+            reward = np.sign(sum_rewards)
+            return observation, reward, done, info
+
+        for idx in range(NUM_STACKED_FRAMES - 1):
+            observation, reward, done, info = self.env.step(action=PONG_NOOP)
+            observation = self.downsample(observation)
+            stacked_observations.append(observation)
+            stacked_rewards.append(reward)
+            if done:
+                for _ in range(NUM_STACKED_FRAMES - idx - 2):
+                    stacked_observations.append(np.zeros(shape=(80, 80)))
+                observation = np.stack(stacked_observations, axis=2)
+                sum_rewards = np.sum(stacked_rewards)
+                info["sum_rewards"] = sum_rewards
+                reward = np.sign(sum_rewards)
+                return observation, reward, done, info
+
+        observation = np.stack(stacked_observations, axis=2)
+        sum_rewards = np.sum(stacked_rewards)
+        info["sum_rewards"] = sum_rewards
+        reward = np.sign(sum_rewards)
+
+        return observation, reward, done, info
 
     def render(self, mode='human'):
         return self.env.render(mode=mode)

@@ -138,9 +138,10 @@ class DqnAgent:
     def q_net_optimize(self):
         states, actions, rewards, next_states, dones = self.buffer.get_random_batch(args.batch_size)
 
+        next_q_values = np.where(dones, 0, np.max(self.target_q_net.forward(next_states), axis=1))
+        target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
+
         with tf.GradientTape() as tape:
-            next_q_values = np.max(self.target_q_net.forward(next_states), axis=1)
-            target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
             current_q_values = tf.math.reduce_sum(
                 self.train_q_net.forward(states) * tf.one_hot(actions, self.action_dim), axis=1
             )
@@ -178,12 +179,21 @@ class DqnAgent:
 
                 if args.verbose:
                     print("State: {0}, Action: {1}, Next State: {2}, Reward: {3}, Done: {4}, Info: {5}".format(
-                        state.shape, action, next_state.shape, reward, done, info
+                        state.shape,
+                        action,
+                        next_state.shape if next_state is not None else "None",
+                        reward,
+                        done,
+                        info
                     ))
 
                 transition = [state, action, reward * 0.01, next_state, done]
                 self.buffer.put(transition)
-                episode_reward += reward
+
+                if "env_name" in dir(self.env) and self.env.env_name == "pong":
+                    episode_reward += info["sum_rewards"]
+                else:
+                    episode_reward += reward
 
                 if self.buffer.size() >= args.batch_size:
                     episode_loss += self.q_net_optimize()
