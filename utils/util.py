@@ -60,3 +60,11 @@ def print_grid_world_policy(env, policy):
                         env.action_space.ACTION_SYMBOLS[np.argmax(policy[(i, j)][1])]
                     )
             print()
+
+
+def almost_equals(a, b, decimal=6):
+    try:
+        np.testing.assert_almost_equal(a, b, decimal=decimal)
+    except AssertionError:
+        return False
+    return True

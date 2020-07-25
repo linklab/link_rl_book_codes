@@ -50,7 +50,7 @@ class PongWrappingEnv:
 
         observation = observation[:, :]
 
-        return tf.cast(observation, dtype=tf.float32)
+        return tf.cast(observation, dtype=tf.float64)
 
     def reset(self):
         observation = self.env.reset()

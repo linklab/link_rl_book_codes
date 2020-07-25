@@ -1,11 +1,6 @@
-from tensorflow.keras.layers import Add
-
 from chapter_10.double_dqn import DoubleDqnAgent
 from chapter_10.dqn import *
 from chapter_10.dueling_dqn import DuelingQNetwork
-
-log_dir = 'logs/dueling_double_dqn/' + current_time
-summary_writer = tf.summary.create_file_writer(log_dir)
 
 
 class DuelingDoubleDqnAgent(DoubleDqnAgent):

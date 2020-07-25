@@ -1,8 +1,5 @@
 from chapter_10.dqn import *
 
-log_dir = 'logs/double_dqn/' + current_time
-summary_writer = tf.summary.create_file_writer(log_dir)
-
 
 class DoubleDqnAgent(DqnAgent):
     def __init__(self, env):

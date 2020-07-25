@@ -1,8 +1,5 @@
 from chapter_10.dqn import *
 
-log_dir = 'logs/dueling_dqn/' + current_time
-summary_writer = tf.summary.create_file_writer(log_dir)
-
 
 class DuelingQNetwork(tf.keras.Model):
     def __init__(self, state_dim, action_dim):

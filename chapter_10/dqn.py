@@ -35,9 +35,6 @@ args = parser.parse_args()
 
 current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
-log_dir = 'logs/dqn/' + current_time
-summary_writer = tf.summary.create_file_writer(log_dir)
-
 
 def print_args():
     print("##############################################")

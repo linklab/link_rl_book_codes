@@ -2,9 +2,6 @@ from chapter_10.dqn import *
 from chapter_10.per_dueling_double_dqn import PerDuelingDoubleDqnAgent
 from environments.pong import PongWrappingEnv, PONG_UP_ACTION, PONG_DOWN_ACTION
 
-log_dir = 'logs/cnn_dqn_pong/' + current_time
-summary_writer = tf.summary.create_file_writer(log_dir)
-
 
 class CnnPongQNetwork(tf.keras.Model):
     def __init__(self, state_dim, action_dim):
