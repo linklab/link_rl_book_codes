@@ -204,10 +204,7 @@ class DqnAgent:
                 transition = [state, action, reward * 0.01, next_state, done]
                 self.buffer.put(transition)
 
-                if "env_name" in dir(self.env) and self.env.env_name == "pong":
-                    episode_reward += info["sum_rewards"]
-                else:
-                    episode_reward += reward
+                episode_reward += reward
 
                 if self.buffer.size() >= args.batch_size:
                     episode_loss += self.q_net_optimize()
