@@ -1,3 +1,4 @@
+# https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/
 import random
 import sys
 import time
