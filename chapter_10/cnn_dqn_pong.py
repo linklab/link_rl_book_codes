@@ -47,8 +47,8 @@ class CnnPongQNetwork(tf.keras.Model):
         if np.random.random() < epsilon:
             action = random.randint(0, self.action_dim - 1)
         else:
-            state = np.reshape(state, [1, self.state_dim])
-            q_value = self.forward(state)[0]
+            state = tf.expand_dims(state, axis=0)
+            q_value = self.forward(state)
             action = np.argmax(q_value)
 
         self.num_actions_executed[action] += 1
