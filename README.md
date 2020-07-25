@@ -19,3 +19,7 @@
 - http://inoryy.com/post/tensorflow2-deep-reinforcement-learning/
 - https://blog.naver.com/PostView.nhn?blogId=msnayana&logNo=221431225117&categoryNo=182&parentCategoryNo=0&viewDate=&currentPage=1&postListTopCurrentPage=1&from=postView
 - Pong-v0: https://towardsdatascience.com/intro-to-reinforcement-learning-pong-92a94aa0f84d#9e3b
+
+### 6. 통계 그래프 보는 방법
+- python -m visdom.server 수행 
+- 브라우저에서 http://localhost:8097 접속 

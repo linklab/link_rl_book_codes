@@ -11,6 +11,13 @@ import random
 from gym import wrappers
 import os
 
+from visdom import Visdom
+
+vis = Visdom()
+episode_reward_plt = vis.line(X=[0], Y=[0], opts=dict(title='Episode Reward', showlegend=False))
+avg_episode_reward_plt = vis.line(X=[0], Y=[0], opts=dict(title='Average Episode Reward', showlegend=False))
+episode_loss_plt = vis.line(X=[0], Y=[0], opts=dict(title='Episode Loss', showlegend=False))
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--gamma', type=float, default=0.99)
 parser.add_argument('--learning_rate', type=float, default=0.00025)
@@ -18,8 +25,10 @@ parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--epsilon_init', type=float, default=1.0)
 parser.add_argument('--epsilon_min', type=float, default=0.01)
 parser.add_argument('--replay_memory_capacity', type=int, default=250000)
-parser.add_argument('--max_episodes', type=int, default=20000)
+parser.add_argument('--epsilon_decay_end_step', type=int, default=1000000)
+parser.add_argument('--max_steps', type=int, default=5000000)
 parser.add_argument('--target_net_update_freq', type=int, default=1000)
+parser.add_argument('--draw_graph_freq', type=int, default=10)
 parser.add_argument('--verbose', type=bool, default=False)
 parser.add_argument('--train_render', type=bool, default=False)
 args = parser.parse_args()
@@ -37,9 +46,11 @@ def print_args():
     print("batch_size: {0}".format(args.batch_size))
     print("epsilon_init: {0}".format(args.epsilon_init))
     print("epsilon_min: {0}".format(args.epsilon_min))
+    print("epsilon_decay_end_step: {0}".format(args.epsilon_decay_end_step))
+    print("max_steps: {0}".format(args.max_steps))
     print("replay_memory_capacity: {0}".format(args.replay_memory_capacity))
-    print("max_episodes: {0}".format(args.max_episodes))
     print("target_net_update_freq: {0}".format(args.target_net_update_freq))
+    print("draw_graph_freq: {0}".format(args.draw_graph_freq))
     print("verbose: {0}".format(args.verbose))
     print("train_render: {0}".format(args.train_render))
     print("##############################################")
@@ -166,7 +177,12 @@ class DqnAgent:
         epsilon = args.epsilon_init
 
         total_steps = 0
-        for ep in range(1, args.max_episodes + 1):
+        episode = 0
+        train_done = False
+
+        while not train_done:
+            episode += 1
+            # new episode started
             state = self.env.reset()
 
             episode_steps = 0
@@ -183,9 +199,10 @@ class DqnAgent:
 
                 epsilon = linear_interpolation(
                     start_step=0,
-                    end_step=1000000,
+                    end_step=args.epsilon_decay_end_step,
                     current_step=total_steps,
-                    final_p=args.epsilon_min, initial_p=args.epsilon_init
+                    final_p=args.epsilon_min,
+                    initial_p=args.epsilon_init
                 )
 
                 action = self.train_q_net.get_action(state, epsilon)
@@ -214,10 +231,16 @@ class DqnAgent:
 
                 state = next_state
 
+                if total_steps >= args.max_steps:
+                    train_done = True
+                    break
+
             episode_rewards_last_10.append(episode_reward)
             avg_episode_reward = np.array(episode_rewards_last_10).mean()
 
-            self.write_performance(ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps, episode_steps)
+            self.write_performance(
+                episode, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps, episode_steps
+            )
             self.episode_reward_list.append(avg_episode_reward)
             self.train_q_net.reset_num_actions_executed()
 
@@ -234,10 +257,10 @@ class DqnAgent:
             os.path.join(os.getcwd(), 'models', 'dqn_{0}.tf'.format(self.__name__))
         )
 
-    def write_performance(self, ep, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps, episode_steps):
+    def write_performance(self, episode, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps, episode_steps):
         str_info = "[{0}] Episode: {1}, Eps.: {2:.3f}, Episode reward: {3}, Avg. episode reward (last 10): {4:.3f}, " \
                    "Episode loss: {5:.5f}, Buffer size: {6}, Total steps: {7} ({8})".format(
-            self.__name__, ep, epsilon, episode_reward, avg_episode_reward,
+            self.__name__, episode, epsilon, episode_reward, avg_episode_reward,
             episode_loss, self.buffer.size(), total_steps, episode_steps
         )
 
@@ -246,10 +269,18 @@ class DqnAgent:
             str_info += "[{0}: {1}] ".format(action, self.train_q_net.num_actions_executed[action])
         print(str_info)
 
-        with summary_writer.as_default():
-            tf.summary.scalar('Episode Reward', episode_reward, step=ep)
-            tf.summary.scalar('Episode Reward (average last 10 episodes)', avg_episode_reward, step=ep)
-            tf.summary.scalar('Episode Loss', episode_loss, step=ep)
+        vis.line(
+            X=[total_steps], Y=[episode_reward], win=episode_reward_plt, name="Episode Reward", update="append",
+            opts=dict(title='Episode Reward', showlegend=False)
+        )
+        vis.line(
+            X=[total_steps], Y=[avg_episode_reward], win=avg_episode_reward_plt, name="Average Episode Reward", update="append",
+            opts=dict(title='Average Episode Reward', showlegend=False)
+        )
+        vis.line(
+            X=[total_steps], Y=[episode_loss], win=episode_loss_plt, name="Episode Loss", update="append",
+            opts=dict(title='Episode Loss', showlegend=False)
+        )
 
 
 def execution(env, agent, make_video=False):
@@ -286,5 +317,8 @@ def main():
 
 
 if __name__ == "__main__":
+    #
     main()
     # tensorboard --logdir 'logs/dqn/'
+    # CARPOLE
+    # python chapter_10/dqn.py --learning_rate=0.005 --epsilon_init=1.0 --epsilon_min=0.1 --replay_memory_capacity=8192 --target_net_update_freq=500 --epsilon_decay_end_step=15000 --max_steps=30000
