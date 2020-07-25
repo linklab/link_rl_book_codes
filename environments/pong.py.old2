@@ -6,6 +6,7 @@ from collections import deque
 import gym
 from gym.spaces import Box, Discrete
 import cv2
+import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -46,7 +47,9 @@ class PongWrappingEnv:
         # plt.imshow(observation, 'gray')
         # plt.show()
 
-        return observation
+        observation = observation[:, :]
+
+        return tf.cast(observation, dtype=tf.float64)
 
     def reset(self):
         observation = self.env.reset()
@@ -63,13 +66,7 @@ class PongWrappingEnv:
         return stacked_observations
 
     def step(self, action):
-        if action == 0:
-            action = PONG_UP_ACTION
-        elif action == 1:
-            action = PONG_DOWN_ACTION
-
         observation, reward, done, info = self.env.step(action=action)
-
         observation = self.downsample(observation)
         self.stacked_observations.append(observation)
         stacked_observations = np.stack(self.stacked_observations, axis=2)
@@ -94,6 +91,13 @@ def main():
         env.render()
 
         action = random.randint(0, env.action_space.n - 1)
+        if action == 0:
+            action = PONG_UP_ACTION
+        elif action == 1:
+            action = PONG_DOWN_ACTION
+        else:
+            raise ValueError()
+
 
         next_state, reward, done, info = env.step(action)
         print("State: {0}, Action: {1}, Next State: {2}, Reward: {3}, Done: {4}, Info: {5}".format(

@@ -1,6 +1,7 @@
 from chapter_10.double_dqn import DoubleDqnAgent
 from chapter_10.dqn import *
 from chapter_10.dueling_dqn import DuelingQNetwork
+from environments.pong import PongWrappingEnv
 
 
 class DuelingDoubleDqnAgent(DoubleDqnAgent):
@@ -14,6 +15,7 @@ class DuelingDoubleDqnAgent(DoubleDqnAgent):
 
 def main():
     env = gym.make('CartPole-v0')
+
     dueling_double_dqn_agent = DuelingDoubleDqnAgent(env)
     dueling_double_dqn_agent.print_q_network()
     dueling_double_dqn_agent.learn()

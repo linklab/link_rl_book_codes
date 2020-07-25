@@ -1,5 +1,5 @@
 from chapter_10.dqn import *
-from chapter_10.per_dueling_double_dqn import PerDuelingDoubleDqnAgent
+from chapter_10.per_dueling_double_dqn import PerDuelingDoubleDqnAgent, PrioritizedExperienceMemory
 from environments.pong import PongWrappingEnv, PONG_UP_ACTION, PONG_DOWN_ACTION
 
 
@@ -25,10 +25,7 @@ class CnnPongQNetwork(tf.keras.Model):
 
     def reset_num_actions_executed(self):
         for action in range(self.action_dim):
-            if action == 0:
-                self.num_actions_executed[PONG_UP_ACTION] = 0
-            else:
-                self.num_actions_executed[PONG_DOWN_ACTION] = 0
+            self.num_actions_executed[action] = 0
 
     def call(self, state, **kwargs):
         return self.forward(state)
@@ -42,41 +39,28 @@ class CnnPongQNetwork(tf.keras.Model):
 
         value = self.value_output_layer(z)
         advantage = self.advantage_output_layer(z)
-
         output = self.output_layer(inputs=[value, advantage])
+
         return output
 
     def get_action(self, state, epsilon):
         if np.random.random() < epsilon:
             action = random.randint(0, self.action_dim - 1)
-            if action == 0:
-                self.num_actions_executed[PONG_UP_ACTION] += 1
-                return PONG_UP_ACTION
-            elif action == 1:
-                self.num_actions_executed[PONG_DOWN_ACTION] += 1
-                return PONG_DOWN_ACTION
-            else:
-                raise ValueError()
         else:
-            state = tf.expand_dims(state, axis=0)
-            q_value = self.forward(state)
+            state = np.reshape(state, [1, self.state_dim])
+            q_value = self.forward(state)[0]
             action = np.argmax(q_value)
-            if action == 0:
-                self.num_actions_executed[PONG_UP_ACTION] += 1
-                return PONG_UP_ACTION
-            elif action == 1:
-                self.num_actions_executed[PONG_DOWN_ACTION] += 1
-                return PONG_DOWN_ACTION
-            else:
-                raise ValueError()
+
+        self.num_actions_executed[action] += 1
+        return action
 
 
 class CnnDqnAgent(PerDuelingDoubleDqnAgent):
     def __init__(self, env):
         super().__init__(env)
         self.__name__ = "cnn_dqn_agent"
-        self.state_dim = self.env.observation_space.shape
-        self.action_dim = self.env.action_space.n
+        self.state_dim = env.observation_space.shape
+        self.action_dim = env.action_space.n
 
         self.train_q_net = CnnPongQNetwork(self.state_dim, self.action_dim)
         self.target_q_net = CnnPongQNetwork(self.state_dim, self.action_dim)
@@ -87,6 +71,7 @@ def main():
     print_args()
 
     env = PongWrappingEnv()
+
     print(env.observation_space)
     print(env.action_space)
 
@@ -103,4 +88,3 @@ def main():
 # python chapter_10/cnn_dqn_pong.py --max_episodes=1000 --epsilon_decay=0.99999 --replay_memory_capacity=16000 --batch_size=256
 if __name__ == "__main__":
     main()
-    # tensorboard --logdir 'logs/advanced_dqn_agent/'

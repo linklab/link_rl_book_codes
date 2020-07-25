@@ -1,7 +1,8 @@
 from chapter_10.dqn import *
 from chapter_10.dueling_double_dqn import DuelingDoubleDqnAgent
+from environments.pong import PongWrappingEnv
 from utils.util import almost_equals
-tf.keras.backend.set_floatx('float64')
+# tf.keras.backend.set_floatx('float64')
 
 
 class SumTree:
@@ -116,18 +117,15 @@ class PerDuelingDoubleDqnAgent(DuelingDoubleDqnAgent):
         batch, idxs, is_weight = self.buffer.get_random_batch(args.batch_size)
         states, actions, rewards, next_states, dones = map(np.asarray, zip(*batch))
 
-        # print(type(states), type(states[0]), type(states[0][0]), type(states[0][0][0]), type(states[0][0][0][0]))
-        # print(type(actions), type(actions[0]))
-        # print(type(rewards), type(rewards[0]))
-        # print(type(next_states), type(next_states[0]), type(next_states[0][0]), type(states[0][0][0]), type(states[0][0][0][0]))
-        # print(type(dones), type(dones[0]))
-
-        next_q_values = np.where(dones, 0, np.max(self.target_q_net.forward(next_states), axis=1))
+        selected_actions = np.argmax(self.train_q_net.forward(next_states), axis=1)
+        next_q_values = tf.math.reduce_sum(
+            self.target_q_net.forward(next_states) * tf.one_hot(selected_actions, self.action_dim), axis=1
+        )
         target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
 
         with tf.GradientTape() as tape:
             current_q_values = tf.math.reduce_sum(
-                self.train_q_net.forward(states) * tf.one_hot(actions, self.action_dim, dtype=tf.float64), axis=1
+                self.train_q_net.forward(states) * tf.one_hot(actions, self.action_dim), axis=1
             )
             loss = tf.math.reduce_mean(tf.square(target_q_values - current_q_values) * is_weight)
 
@@ -138,13 +136,9 @@ class PerDuelingDoubleDqnAgent(DuelingDoubleDqnAgent):
             self.buffer.update_priority(idx, td_error[i])
 
         # train_q_net 가중치 갱신
+
         variables = self.train_q_net.trainable_variables
         gradients = tape.gradient(loss, variables)
-
-        print(loss, " !!!!")
-        for i, grad in enumerate(gradients):
-            if grad is not None:
-                print(i, almost_equals(np.sum(grad), 0.0))
 
         self.optimizer.apply_gradients(zip(gradients, variables))
 
@@ -163,6 +157,8 @@ def prioritized_experience_memory_test():
 
 
 def main():
+    print_args()
+
     env = gym.make('CartPole-v0')
 
     per_dueling_double_dqn_agent = PerDuelingDoubleDqnAgent(env)
@@ -178,4 +174,3 @@ def main():
 if __name__ == "__main__":
     #prioritized_experience_memory_test()
     main()
-    # tensorboard --logdir 'logs/double_dqn/'

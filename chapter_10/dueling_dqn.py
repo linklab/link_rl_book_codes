@@ -1,4 +1,5 @@
 from chapter_10.dqn import *
+from environments.pong import PongWrappingEnv, PONG_UP_ACTION, PONG_DOWN_ACTION
 
 
 class DuelingQNetwork(tf.keras.Model):
@@ -47,6 +48,7 @@ class DuelingQNetwork(tf.keras.Model):
 
         self.num_actions_executed[action] += 1
         return action
+
 
 class DuelingDqnAgent(DqnAgent):
     def __init__(self, env):

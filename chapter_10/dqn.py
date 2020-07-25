@@ -31,6 +31,7 @@ parser.add_argument('--target_net_update_freq', type=int, default=1000)
 parser.add_argument('--draw_graph_freq', type=int, default=10)
 parser.add_argument('--verbose', type=bool, default=False)
 parser.add_argument('--train_render', type=bool, default=False)
+
 args = parser.parse_args()
 
 current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -38,19 +39,10 @@ current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
 def print_args():
     print("##############################################")
-    print("gamma: {0}".format(args.gamma))
-    print("learning_rate: {0}".format(args.learning_rate))
-    print("batch_size: {0}".format(args.batch_size))
-    print("epsilon_init: {0}".format(args.epsilon_init))
-    print("epsilon_min: {0}".format(args.epsilon_min))
-    print("epsilon_decay_end_step: {0}".format(args.epsilon_decay_end_step))
-    print("max_steps: {0}".format(args.max_steps))
-    print("replay_memory_capacity: {0}".format(args.replay_memory_capacity))
-    print("target_net_update_freq: {0}".format(args.target_net_update_freq))
-    print("draw_graph_freq: {0}".format(args.draw_graph_freq))
-    print("verbose: {0}".format(args.verbose))
-    print("train_render: {0}".format(args.train_render))
+    for k, v in vars(args).items():
+        print(k + ': ' + str(v))
     print("##############################################")
+    print()
 
 
 def linear_interpolation(start_step, end_step, current_step, final_p, initial_p):
@@ -316,6 +308,5 @@ def main():
 if __name__ == "__main__":
     #
     main()
-    # tensorboard --logdir 'logs/dqn/'
     # CARPOLE
     # python chapter_10/dqn.py --learning_rate=0.005 --epsilon_init=1.0 --epsilon_min=0.1 --replay_memory_capacity=8192 --target_net_update_freq=500 --epsilon_decay_end_step=15000 --max_steps=30000
