@@ -1,3 +1,4 @@
+from chapter_10.double_dqn import DoubleDqnAgent
 from chapter_10.dqn import *
 from chapter_10.per_dueling_double_dqn import PerDuelingDoubleDqnAgent, PrioritizedExperienceMemory
 from environments.pong import PongWrappingEnv, PONG_UP_ACTION, PONG_DOWN_ACTION
@@ -55,7 +56,7 @@ class CnnPongQNetwork(tf.keras.Model):
         return action
 
 
-class CnnDqnAgent(PerDuelingDoubleDqnAgent):
+class CnnDqnAgent(DoubleDqnAgent):
     def __init__(self, env):
         super().__init__(env)
         self.__name__ = "cnn_dqn_agent"
