@@ -114,9 +114,6 @@ def main():
 
     train(args)
 
-    # 테스트시에는 CartPole-v1을 사용하여 테스트
-    # CartPole-v1의 MAX 스텝: 500 vs. CartPole-v0의 MAX 스텝: 200
-    args.env = 'CartPole-v1'
     play(args)
 
 
