@@ -6,6 +6,26 @@ from chapter_10.pong_cnn_dueling_double_dqn import CnnDuelingDoubleDqnAgent, Cnn
 from environments.pong import PongWrappingEnv
 
 
+def argument_parse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gamma', type=float, default=0.99)
+    parser.add_argument('--learning_rate', type=float, default=0.00025)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--epsilon_init', type=float, default=1.0)
+    parser.add_argument('--epsilon_min', type=float, default=0.01)
+    parser.add_argument('--replay_memory_capacity', type=int, default=250000)
+    parser.add_argument('--epsilon_decay_end_step', type=int, default=1000000)
+    parser.add_argument('--max_steps', type=int, default=2000000)
+    parser.add_argument('--target_net_update_freq', type=int, default=1000)
+    parser.add_argument('--average_length_episode_rewards', type=int, default=10)
+    parser.add_argument('--train_end_for_average_episode_rewards', type=int, default=15)
+    parser.add_argument('--draw_graph_freq', type=int, default=10)
+    parser.add_argument('--verbose', type=bool, default=False)
+    parser.add_argument('--train_render', type=bool, default=False)
+    args = parser.parse_args()
+    return args
+
+
 class CnnPerDuelingDoubleDqnAgent(PerDoubleDqnAgent):
     def __init__(self, env, args):
         super().__init__(env, args)
