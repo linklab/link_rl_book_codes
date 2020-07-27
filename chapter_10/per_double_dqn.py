@@ -1,15 +1,11 @@
 from chapter_10.dqn import *
-from chapter_10.dueling_dqn import DuelingQNetwork
-from chapter_10.per_double_dqn import PerDoubleDqnAgent
+from chapter_10.per_dqn import PerDqnAgent
 
 
-class PerDuelingDoubleDqnAgent(PerDoubleDqnAgent):
+class PerDoubleDqnAgent(PerDqnAgent):
     def __init__(self, env, args):
         super().__init__(env, args)
-        self.__name__ = "per_dueling_double_dqn"
-        self.train_q_net = DuelingQNetwork(self.state_dim, self.action_dim)
-        self.target_q_net = DuelingQNetwork(self.state_dim, self.action_dim)
-        self.target_update()
+        self.__name__ = "per_double_dqn"
 
     def q_net_optimize(self, args):
         batch, idxs, is_weight = self.buffer.get_random_batch(args.batch_size)
@@ -49,14 +45,14 @@ def main():
 
     env = gym.make('CartPole-v0')
 
-    per_dueling_double_dqn_agent = PerDuelingDoubleDqnAgent(env, args)
-    per_dueling_double_dqn_agent.print_q_network_and_replay_memory_type()
-    per_dueling_double_dqn_agent.learn(args)
-    per_dueling_double_dqn_agent.save_model()
+    per_double_dqn_agent = PerDoubleDqnAgent(env, args)
+    per_double_dqn_agent.print_q_network_and_replay_memory_type()
+    per_double_dqn_agent.learn(args)
+    per_double_dqn_agent.save_model()
 
-    per_dueling_double_dqn_agent2 = PerDuelingDoubleDqnAgent(env, args)
-    per_dueling_double_dqn_agent2.save_model()
-    execution(env, per_dueling_double_dqn_agent2)
+    per_double_dqn_agent2 = PerDoubleDqnAgent(env, args)
+    per_double_dqn_agent2.save_model()
+    execution(env, per_double_dqn_agent2)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 #https://github.com/marload/DeepRL-TensorFlow2
 import tensorflow as tf
 import tensorflow.keras.layers as kl
+import logging
+tf.get_logger().setLevel(logging.ERROR)
 
 import datetime
 import gym
@@ -10,39 +12,66 @@ from collections import deque
 import random
 from gym import wrappers
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 from visdom import Visdom
 
+# python -m visdom.server
+# open web page --> http://localhost:8097
 vis = Visdom()
-episode_reward_plt = vis.line(X=[0], Y=[0], opts=dict(title='Episode Reward', showlegend=False))
-avg_episode_reward_plt = vis.line(X=[0], Y=[0], opts=dict(title='Average Episode Reward', showlegend=False))
-episode_loss_plt = vis.line(X=[0], Y=[0], opts=dict(title='Episode Loss', showlegend=False))
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--gamma', type=float, default=0.99)
-parser.add_argument('--learning_rate', type=float, default=0.00025)
-parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--epsilon_init', type=float, default=1.0)
-parser.add_argument('--epsilon_min', type=float, default=0.01)
-parser.add_argument('--replay_memory_capacity', type=int, default=250000)
-parser.add_argument('--epsilon_decay_end_step', type=int, default=1000000)
-parser.add_argument('--max_steps', type=int, default=5000000)
-parser.add_argument('--target_net_update_freq', type=int, default=1000)
-parser.add_argument('--draw_graph_freq', type=int, default=10)
-parser.add_argument('--verbose', type=bool, default=False)
-parser.add_argument('--train_render', type=bool, default=False)
-
-args = parser.parse_args()
-
-current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+episode_reward_plt = None
+avg_episode_reward_plt = None
+episode_loss_plt = None
+epsilon_plt = None
 
 
-def print_args():
+def vis_plt(method):
+    global episode_reward_plt
+    global avg_episode_reward_plt
+    global episode_loss_plt
+    global epsilon_plt
+    episode_reward_plt = vis.line(
+        X=[0], Y=[0], opts=dict(title='[{0}] Episode Reward'.format(method), showlegend=False)
+    )
+    avg_episode_reward_plt = vis.line(
+        X=[0], Y=[0], opts=dict(title='[{0}] Avg. Episode Reward'.format(method), showlegend=False)
+    )
+    episode_loss_plt = vis.line(
+        X=[0], Y=[0], opts=dict(title='[{0}] Episode Loss'.format(method), showlegend=False)
+    )
+    epsilon_plt = vis.line(
+        X=[0], Y=[0], opts=dict(title='[{0}] Epsilon'.format(method), showlegend=False)
+    )
+
+
+def argument_parse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gamma', type=float, default=0.99)
+    parser.add_argument('--learning_rate', type=float, default=0.005)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--epsilon_init', type=float, default=1.0)
+    parser.add_argument('--epsilon_min', type=float, default=0.01)
+    parser.add_argument('--replay_memory_capacity', type=int, default=10000)
+    parser.add_argument('--epsilon_decay_end_step', type=int, default=15000)
+    parser.add_argument('--max_steps', type=int, default=30000)
+    parser.add_argument('--target_net_update_freq', type=int, default=1000)
+    parser.add_argument('--draw_graph_freq', type=int, default=100)
+    parser.add_argument('--verbose', type=bool, default=False)
+    parser.add_argument('--train_render', type=bool, default=False)
+    args = parser.parse_args()
+    return args
+
+
+def print_args(args):
     print("##############################################")
     for k, v in vars(args).items():
         print(k + ': ' + str(v))
     print("##############################################")
     print()
+
+
+current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
 
 def linear_interpolation(start_step, end_step, current_step, final_p, initial_p):
@@ -54,6 +83,7 @@ def linear_interpolation(start_step, end_step, current_step, final_p, initial_p)
 
 class ReplayMemory:
     def __init__(self, capacity):
+        self.__name__ = "Replay Memory"
         self.buffer = deque(maxlen=capacity)
 
     def put(self, transition):
@@ -109,8 +139,8 @@ class QNetwork(tf.keras.Model):
 
 
 class DqnAgent:
-    def __init__(self, env):
-        self.__name__ = "dqn_agent"
+    def __init__(self, env, args):
+        self.__name__ = "dqn"
         self.env = env
         self.state_dim = self.env.observation_space.shape[0]
         self.action_dim = self.env.action_space.n
@@ -127,7 +157,7 @@ class DqnAgent:
         if not os.path.exists(os.path.join(os.getcwd(), 'models')):
             os.makedirs(os.path.join(os.getcwd(), 'models'))
 
-    def print_q_network(self):
+    def print_q_network_and_replay_memory_type(self):
         if type(self.state_dim) is int:
             one_input_shape = tuple([1] + [self.state_dim,])
         else:
@@ -136,13 +166,16 @@ class DqnAgent:
         self.train_q_net.build(input_shape=one_input_shape)
         self.train_q_net.summary()
 
+        print("Buffer: {0}\n".format(self.buffer.__name__))
+        vis_plt(self.__name__)
+
     def target_update(self):
         train_q_net_variables = self.train_q_net.trainable_variables
         target_q_net_variables = self.target_q_net.trainable_variables
         for v1, v2 in zip(train_q_net_variables, target_q_net_variables):
             v2.assign(v1.numpy())
 
-    def q_net_optimize(self):
+    def q_net_optimize(self, args):
         states, actions, rewards, next_states, dones = self.buffer.get_random_batch(args.batch_size)
 
         next_q_values = np.where(dones, 0, np.max(self.target_q_net.forward(next_states), axis=1))
@@ -161,7 +194,7 @@ class DqnAgent:
 
         return loss.numpy()
 
-    def learn(self):
+    def learn(self, args):
         episode_rewards_last_10 = deque(maxlen=10)
         epsilon = args.epsilon_init
 
@@ -213,7 +246,7 @@ class DqnAgent:
                 episode_reward += reward
 
                 if self.buffer.size() >= args.batch_size:
-                    episode_loss += self.q_net_optimize()
+                    episode_loss += self.q_net_optimize(args)
 
                 if total_steps % args.target_net_update_freq == 0:
                     self.target_update()
@@ -258,18 +291,19 @@ class DqnAgent:
             str_info += "[{0}: {1}] ".format(action, self.train_q_net.num_actions_executed[action])
         print(str_info)
 
-        vis.line(
-            X=[total_steps], Y=[episode_reward], win=episode_reward_plt, name="Episode Reward", update="append",
-            opts=dict(title='Episode Reward', showlegend=False)
-        )
-        vis.line(
-            X=[total_steps], Y=[avg_episode_reward], win=avg_episode_reward_plt, name="Average Episode Reward", update="append",
-            opts=dict(title='Average Episode Reward', showlegend=False)
-        )
-        vis.line(
-            X=[total_steps], Y=[episode_loss], win=episode_loss_plt, name="Episode Loss", update="append",
-            opts=dict(title='Episode Loss', showlegend=False)
-        )
+        if vis:
+            vis.line(
+                X=[total_steps], Y=[episode_reward], win=episode_reward_plt, name="Episode Reward", update="append"
+            )
+            vis.line(
+                X=[total_steps], Y=[avg_episode_reward], win=avg_episode_reward_plt, name="Average Episode Reward", update="append"
+            )
+            vis.line(
+                X=[total_steps], Y=[episode_loss], win=episode_loss_plt, name="Episode Loss", update="append"
+            )
+            vis.line(
+                X=[total_steps], Y=[epsilon], win=epsilon_plt, name="Epsilon", update="append"
+            )
 
 
 def execution(env, agent, make_video=False):
@@ -292,15 +326,17 @@ def execution(env, agent, make_video=False):
 
 
 def main():
-    print_args()
+    args = argument_parse()
+    print_args(args)
 
     env = gym.make('CartPole-v0')
-    dqn_agent = DqnAgent(env)
-    dqn_agent.print_q_network()
-    dqn_agent.learn()
+
+    dqn_agent = DqnAgent(env, args)
+    dqn_agent.print_q_network_and_replay_memory_type()
+    dqn_agent.learn(args)
     dqn_agent.save_model()
 
-    dqn_agent2 = DqnAgent(env)
+    dqn_agent2 = DqnAgent(env, args)
     dqn_agent2.load_model()
     execution(env, dqn_agent2)
 

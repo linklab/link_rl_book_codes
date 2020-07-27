@@ -1,5 +1,4 @@
 from chapter_10.dqn import *
-from environments.pong import PongWrappingEnv, PONG_UP_ACTION, PONG_DOWN_ACTION
 
 
 class DuelingQNetwork(tf.keras.Model):
@@ -51,26 +50,29 @@ class DuelingQNetwork(tf.keras.Model):
 
 
 class DuelingDqnAgent(DqnAgent):
-    def __init__(self, env):
-        super().__init__(env)
-        self.__name__ = "dueling_dqn_agent"
+    def __init__(self, env, args):
+        super().__init__(env, args)
+        self.__name__ = "dueling_dqn"
         self.train_q_net = DuelingQNetwork(self.state_dim, self.action_dim)
         self.target_q_net = DuelingQNetwork(self.state_dim, self.action_dim)
         self.target_update()
 
 
 def main():
+    args = argument_parse()
+    print_args(args)
+
     env = gym.make('CartPole-v0')
-    dueling_dqn_agent = DuelingDqnAgent(env)
-    dueling_dqn_agent.print_q_network()
-    dueling_dqn_agent.learn()
+
+    dueling_dqn_agent = DuelingDqnAgent(env, args)
+    dueling_dqn_agent.print_q_network_and_replay_memory_type()
+    dueling_dqn_agent.learn(args)
     dueling_dqn_agent.save_model()
 
-    dueling_dqn_agent2 = DuelingDqnAgent(env)
+    dueling_dqn_agent2 = DuelingDqnAgent(env, args)
     dueling_dqn_agent2.load_model()
     execution(env, dueling_dqn_agent2)
 
 
 if __name__ == "__main__":
     main()
-    # tensorboard --logdir 'logs/dueling_dqn/'
