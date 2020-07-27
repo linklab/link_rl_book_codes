@@ -14,8 +14,10 @@ def argument_parse():
     parser.add_argument('--epsilon_min', type=float, default=0.01)
     parser.add_argument('--replay_memory_capacity', type=int, default=250000)
     parser.add_argument('--epsilon_decay_end_step', type=int, default=1000000)
-    parser.add_argument('--max_steps', type=int, default=5000000)
+    parser.add_argument('--max_steps', type=int, default=2000000)
     parser.add_argument('--target_net_update_freq', type=int, default=1000)
+    parser.add_argument('--average_length_episode_rewards', type=int, default=10)
+    parser.add_argument('--train_end_for_average_episode_rewards', type=int, default=15)
     parser.add_argument('--draw_graph_freq', type=int, default=10)
     parser.add_argument('--verbose', type=bool, default=False)
     parser.add_argument('--train_render', type=bool, default=False)
@@ -87,23 +89,35 @@ class CnnDuelingDoubleDqnAgent(DoubleDqnAgent):
         self.target_update()
 
 
-def main():
-    args = argument_parse()
-    print_args(args)
-
+def train(args):
     env = PongWrappingEnv()
-
     print(env.observation_space)
     print(env.action_space)
 
     cnn_dueling_double_dqn_agent = CnnDuelingDoubleDqnAgent(env, args)
     cnn_dueling_double_dqn_agent.print_q_network_and_replay_memory_type()
-    cnn_dueling_double_dqn_agent.learn(args)
+    cnn_dueling_double_dqn_agent.learn()
     cnn_dueling_double_dqn_agent.save_model()
+
+
+def play(args):
+    env = PongWrappingEnv()
 
     cnn_dueling_double_dqn_agent2 = CnnDuelingDoubleDqnAgent(env, args)
     cnn_dueling_double_dqn_agent2.load_model()
     execution(env, cnn_dueling_double_dqn_agent2)
+
+
+def main():
+    args = argument_parse()
+    print_args(args)
+
+    train(args)
+
+    # 테스트시에는 CartPole-v1을 사용하여 테스트
+    # CartPole-v1의 MAX 스텝: 500 vs. CartPole-v0의 MAX 스텝: 200
+    args.env = 'CartPole-v1'
+    play(args)
 
 
 if __name__ == "__main__":
