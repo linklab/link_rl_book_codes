@@ -1,6 +1,8 @@
+# https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/
+
 from chapter_10.double_dqn import DoubleDqnAgent
 from chapter_10.dqn import *
-from environments.pong import PongWrappingEnv, PONG_UP_ACTION, PONG_DOWN_ACTION
+from environments.pong import PongWrappingEnv
 
 
 def argument_parse():
