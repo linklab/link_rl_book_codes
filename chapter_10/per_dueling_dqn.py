@@ -1,12 +1,12 @@
 from chapter_10.dqn import *
 from chapter_10.dueling_dqn import DuelingQNetwork
-from chapter_10.per_double_dqn import PerDoubleDqnAgent
+from chapter_10.per_dqn import PerDqnAgent
 
 
-class PerDuelingDoubleDqnAgent(PerDoubleDqnAgent):
+class PerDuelingDqnAgent(PerDqnAgent):
     def __init__(self, env, args):
         super().__init__(env, args)
-        self.__name__ = "per_dueling_double_dqn"
+        self.__name__ = "per_dueling_dqn"
         self.train_q_net = DuelingQNetwork(self.state_dim, self.action_dim)
         self.target_q_net = DuelingQNetwork(self.state_dim, self.action_dim)
         self.target_update()
@@ -15,18 +15,18 @@ class PerDuelingDoubleDqnAgent(PerDoubleDqnAgent):
 def train(args):
     env = gym.make(args.env)
 
-    per_dueling_double_dqn_agent = PerDuelingDoubleDqnAgent(env, args)
-    per_dueling_double_dqn_agent.print_q_network_and_replay_memory_type()
-    per_dueling_double_dqn_agent.learn()
-    per_dueling_double_dqn_agent.save_model()
+    per_dueling_dqn_agent = PerDuelingDqnAgent(env, args)
+    per_dueling_dqn_agent.print_q_network_and_replay_memory_type()
+    per_dueling_dqn_agent.learn()
+    per_dueling_dqn_agent.save_model()
 
 
 def play(args):
     env = gym.make(args.env)
 
-    per_dueling_double_dqn_agent2 = PerDuelingDoubleDqnAgent(env, args)
-    per_dueling_double_dqn_agent2.save_model()
-    execution(env, per_dueling_double_dqn_agent2)
+    per_dueling_dqn_agent2 = PerDuelingDqnAgent(env, args)
+    per_dueling_dqn_agent2.save_model()
+    execution(env, per_dueling_dqn_agent2)
 
 
 def main():

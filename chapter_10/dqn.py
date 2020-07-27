@@ -16,37 +16,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 from visdom import Visdom
 
-# python -m visdom.server
-# open web page --> http://localhost:8097
-vis = Visdom()
-
-episode_reward_plt = None
-avg_episode_reward_plt = None
-episode_loss_plt = None
-epsilon_plt = None
-
-
-def vis_plt(method):
-    global episode_reward_plt
-    global avg_episode_reward_plt
-    global episode_loss_plt
-    global epsilon_plt
-    episode_reward_plt = vis.line(
-        X=[0], Y=[0], opts=dict(title='[{0}] Episode Reward'.format(method), showlegend=False)
-    )
-    avg_episode_reward_plt = vis.line(
-        X=[0], Y=[0], opts=dict(title='[{0}] Avg. Episode Reward'.format(method), showlegend=False)
-    )
-    episode_loss_plt = vis.line(
-        X=[0], Y=[0], opts=dict(title='[{0}] Episode Loss'.format(method), showlegend=False)
-    )
-    epsilon_plt = vis.line(
-        X=[0], Y=[0], opts=dict(title='[{0}] Epsilon'.format(method), showlegend=False)
-    )
-
-
 def argument_parse():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--env', type=str, default="CartPole-v0")
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--learning_rate', type=float, default=0.005)
     parser.add_argument('--batch_size', type=int, default=32)
@@ -56,6 +28,8 @@ def argument_parse():
     parser.add_argument('--epsilon_decay_end_step', type=int, default=15000)
     parser.add_argument('--max_steps', type=int, default=30000)
     parser.add_argument('--target_net_update_freq', type=int, default=1000)
+    parser.add_argument('--average_length_episode_rewards', type=int, default=10)
+    parser.add_argument('--train_end_for_average_episode_rewards', type=int, default=150)
     parser.add_argument('--draw_graph_freq', type=int, default=100)
     parser.add_argument('--verbose', type=bool, default=False)
     parser.add_argument('--train_render', type=bool, default=False)
@@ -69,6 +43,63 @@ def print_args(args):
         print(k + ': ' + str(v))
     print("##############################################")
     print()
+
+# python -m visdom.server
+# open web page --> http://localhost:8097
+vis = Visdom()
+
+episode_reward_plt = None
+avg_episode_reward_plt = None
+episode_loss_plt = None
+epsilon_plt = None
+
+
+def vis_plt(method, args):
+    global episode_reward_plt
+    global avg_episode_reward_plt
+    global episode_loss_plt
+    global epsilon_plt
+
+    layout_opts_dict = {
+        'plotly': {
+            'xaxis': {
+                'range': [0, args.max_steps],
+            }
+        }
+    }
+    episode_reward_plt = vis.line(
+        X=[0], Y=[0],
+        opts={
+            'title': '[{0}] Episode Reward'.format(method),
+            'showlegend': False,
+            'layoutopts': layout_opts_dict
+        }
+    )
+    avg_episode_reward_plt = vis.line(
+        X=[0], Y=[0],
+        opts={
+            'title': '[{0}] Avg. Episode Reward'.format(method),
+            'showlegend': False,
+            'layoutopts': layout_opts_dict
+        }
+    )
+    episode_loss_plt = vis.line(
+        X=[0], Y=[0],
+        opts={
+            'title': '[{0}] Episode Loss'.format(method),
+            'showlegend': False,
+            'layoutopts': layout_opts_dict
+        }
+    )
+    epsilon_plt = vis.line(
+        X=[0], Y=[0],
+        opts={
+            'title': '[{0}] Epsilon'.format(method),
+            'showlegend': False,
+            'layoutopts': layout_opts_dict
+        }
+    )
+
 
 
 current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -144,6 +175,7 @@ class DqnAgent:
         self.env = env
         self.state_dim = self.env.observation_space.shape[0]
         self.action_dim = self.env.action_space.n
+        self.args = args
 
         self.optimizer = tf.optimizers.Adam(args.learning_rate)
 
@@ -167,7 +199,7 @@ class DqnAgent:
         self.train_q_net.summary()
 
         print("Buffer: {0}\n".format(self.buffer.__name__))
-        vis_plt(self.__name__)
+        vis_plt(self.__name__, self.args)
 
     def target_update(self):
         train_q_net_variables = self.train_q_net.trainable_variables
@@ -175,11 +207,11 @@ class DqnAgent:
         for v1, v2 in zip(train_q_net_variables, target_q_net_variables):
             v2.assign(v1.numpy())
 
-    def q_net_optimize(self, args):
-        states, actions, rewards, next_states, dones = self.buffer.get_random_batch(args.batch_size)
+    def q_net_optimize(self):
+        states, actions, rewards, next_states, dones = self.buffer.get_random_batch(self.args.batch_size)
 
         next_q_values = np.where(dones, 0, np.max(self.target_q_net.forward(next_states), axis=1))
-        target_q_values = np.where(dones, rewards, rewards + args.gamma * next_q_values)
+        target_q_values = np.where(dones, rewards, rewards + self.args.gamma * next_q_values)
 
         with tf.GradientTape() as tape:
             current_q_values = tf.math.reduce_sum(
@@ -194,9 +226,9 @@ class DqnAgent:
 
         return loss.numpy()
 
-    def learn(self, args):
-        episode_rewards_last_10 = deque(maxlen=10)
-        epsilon = args.epsilon_init
+    def learn(self):
+        recent_episode_rewards = deque(maxlen=self.args.average_length_episode_rewards)
+        epsilon = self.args.epsilon_init
 
         total_steps = 0
         episode = 0
@@ -216,21 +248,21 @@ class DqnAgent:
                 total_steps += 1
                 episode_steps += 1
 
-                if args.train_render:
+                if self.args.train_render:
                     self.env.render()
 
                 epsilon = linear_interpolation(
                     start_step=0,
-                    end_step=args.epsilon_decay_end_step,
+                    end_step=self.args.epsilon_decay_end_step,
                     current_step=total_steps,
-                    final_p=args.epsilon_min,
-                    initial_p=args.epsilon_init
+                    final_p=self.args.epsilon_min,
+                    initial_p=self.args.epsilon_init
                 )
 
                 action = self.train_q_net.get_action(state, epsilon)
                 next_state, reward, done, info = self.env.step(action)
 
-                if args.verbose:
+                if self.args.verbose:
                     print("State: {0}, Action: {1}, Next State: {2}, Reward: {3}, Done: {4}, Info: {5}".format(
                         state.shape,
                         action,
@@ -245,20 +277,20 @@ class DqnAgent:
 
                 episode_reward += reward
 
-                if self.buffer.size() >= args.batch_size:
-                    episode_loss += self.q_net_optimize(args)
+                if self.buffer.size() >= self.args.batch_size:
+                    episode_loss += self.q_net_optimize()
 
-                if total_steps % args.target_net_update_freq == 0:
+                if total_steps % self.args.target_net_update_freq == 0:
                     self.target_update()
 
                 state = next_state
 
-                if total_steps >= args.max_steps:
+                if total_steps >= self.args.max_steps:
                     train_done = True
                     break
 
-            episode_rewards_last_10.append(episode_reward)
-            avg_episode_reward = np.array(episode_rewards_last_10).mean()
+            recent_episode_rewards.append(episode_reward)
+            avg_episode_reward = np.array(recent_episode_rewards).mean()
 
             self.write_performance(
                 episode, epsilon, episode_reward, avg_episode_reward, episode_loss, total_steps, episode_steps
@@ -266,7 +298,10 @@ class DqnAgent:
             self.episode_reward_list.append(avg_episode_reward)
             self.train_q_net.reset_num_actions_executed()
 
-            if args.verbose:
+            if avg_episode_reward >= self.args.train_end_for_average_episode_rewards:
+                train_done = True
+
+            if self.args.verbose:
                 print()
 
     def save_model(self):
@@ -325,24 +360,34 @@ def execution(env, agent, make_video=False):
     print("Testing steps: {} rewards {}: ".format(steps, rewards))
 
 
-def main():
-    args = argument_parse()
-    print_args(args)
-
-    env = gym.make('CartPole-v0')
+def train(args):
+    env = gym.make(args.env)
 
     dqn_agent = DqnAgent(env, args)
     dqn_agent.print_q_network_and_replay_memory_type()
-    dqn_agent.learn(args)
+    dqn_agent.learn()
     dqn_agent.save_model()
+
+
+def play(args):
+    env = gym.make(args.env)
 
     dqn_agent2 = DqnAgent(env, args)
     dqn_agent2.load_model()
     execution(env, dqn_agent2)
 
 
+def main():
+    args = argument_parse()
+    print_args(args)
+
+    train(args)
+
+    # 테스트시에는 CartPole-v1을 사용하여 테스트
+    # CartPole-v1의 MAX 스텝: 500 vs. CartPole-v0의 MAX 스텝: 200
+    args.env = 'CartPole-v1'
+    play(args)
+
+
 if __name__ == "__main__":
-    #
     main()
-    # CARPOLE
-    # python chapter_10/dqn.py --learning_rate=0.005 --epsilon_init=1.0 --epsilon_min=0.1 --replay_memory_capacity=8192 --target_net_update_freq=500 --epsilon_decay_end_step=15000 --max_steps=30000

@@ -58,20 +58,33 @@ class DuelingDqnAgent(DqnAgent):
         self.target_update()
 
 
-def main():
-    args = argument_parse()
-    print_args(args)
-
-    env = gym.make('CartPole-v0')
+def train(args):
+    env = gym.make(args.env)
 
     dueling_dqn_agent = DuelingDqnAgent(env, args)
     dueling_dqn_agent.print_q_network_and_replay_memory_type()
-    dueling_dqn_agent.learn(args)
+    dueling_dqn_agent.learn()
     dueling_dqn_agent.save_model()
+
+
+def play(args):
+    env = gym.make(args.env)
 
     dueling_dqn_agent2 = DuelingDqnAgent(env, args)
     dueling_dqn_agent2.load_model()
     execution(env, dueling_dqn_agent2)
+
+
+def main():
+    args = argument_parse()
+    print_args(args)
+
+    train(args)
+
+    # 테스트시에는 CartPole-v1을 사용하여 테스트
+    # CartPole-v1의 MAX 스텝: 500 vs. CartPole-v0의 MAX 스텝: 200
+    args.env = 'CartPole-v1'
+    play(args)
 
 
 if __name__ == "__main__":
