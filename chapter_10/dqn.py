@@ -2,6 +2,8 @@
 import tensorflow as tf
 import tensorflow.keras.layers as kl
 import logging
+
+
 tf.get_logger().setLevel(logging.ERROR)
 
 import datetime
@@ -44,6 +46,7 @@ def print_args(args):
     print("##############################################")
     print()
 
+# pip install visdom
 # python -m visdom.server
 # open web page --> http://localhost:8097
 vis = Visdom()
