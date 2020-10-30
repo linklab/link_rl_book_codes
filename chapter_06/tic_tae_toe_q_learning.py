@@ -77,11 +77,11 @@ def q_learning_main(env):
             action_1 = agent_1.choose_action(state, EPSILON)
             next_state_1, reward_1, done_1, _ = env.step(action_1)
 
-            if not done_1:
+            if done_1:
+                next_state_2, reward_2, done_2 = None, reward_1, done_1
+            else:
                 action_2 = agent_2.choose_action(next_state_1)
                 next_state_2, reward_2, done_2, _ = env.step(action_2)
-            else:
-                next_state_2, reward_2, done_2 = None, reward_1, done_1
 
             batch_list.append([state, action_1, next_state_2, reward_2, done_2])
 
@@ -117,21 +117,21 @@ def q_learning_main(env):
             num_win = 0
             num_draw = 0
             for _ in range(num_test):
-                episode_reward = test(agent_1, agent_2)
+                episode_reward = tic_tac_toe_play(agent_1, agent_2)
                 if episode_reward > 0.0:
                     num_win += 1
                 elif episode_reward == 0:
                     num_draw += 1
             num_lose = num_test - num_win - num_draw
             print("########################", episode, num_win, num_draw, num_lose)
-            print(list(agent_1.q_table[env.INITIAL_STATE.identifier()].values()), np.argmax(list(agent_1.q_table[env.INITIAL_STATE.identifier()].values())), end="\n\n")
+            #print(list(agent_1.q_table[env.INITIAL_STATE.identifier()].values()), np.argmax(list(agent_1.q_table[env.INITIAL_STATE.identifier()].values())), end="\n\n")
             test_results.append(num_win)
 
     plt.plot(range(len(test_results)), test_results)
     plt.show()
 
 
-def test(agent_1, agent_2):
+def tic_tac_toe_play(agent_1, agent_2):
     env = TicTacToe()
     state = env.reset()
 

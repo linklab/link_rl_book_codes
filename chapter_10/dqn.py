@@ -18,6 +18,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 from visdom import Visdom
 
+
 def argument_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--env', type=str, default="CartPole-v0")
