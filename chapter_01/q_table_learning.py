@@ -5,10 +5,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
+np.set_printoptions(precision=3)
+np.set_printoptions(suppress=True)
+
+
 # Environment
 # Slippery environment (stochastic policy, move left probability = 1/3) comes by default!
 # If we want deterministic policy, we need to create new environment
 # Make environment No Slippery (deterministic policy, move left = 100% left)
+
+MAX_EPISODE_STEPS = 250
 
 gym.envs.register(
     id='FrozenLakeNotSlippery-v0',
@@ -16,8 +22,7 @@ gym.envs.register(
     kwargs={
         'map_name': '4x4', 'is_slippery': False
     },
-    max_episode_steps=250,
-#    reward_threshold=0.78,  # optimum = .8196
+    max_episode_steps=MAX_EPISODE_STEPS,
 )
 
 # You can only register once
@@ -30,53 +35,77 @@ env = gym.make('FrozenLakeNotSlippery-v0')
 
 
 # Q값이 모두 같을때 랜덤한 action을 구해주기 위한 함수
-def argmax(action_values):
+def greedy_action(action_values):
     max_value = np.max(action_values)
     return np.random.choice([action_ for action_, value_ in enumerate(action_values) if value_ == max_value])
 
 
-def q_table_learning(num_episodes = 1000):
+def epsilon_greedy_action(action_values, epsilon):
+    if np.random.rand() < epsilon:
+        return random.choice(range(len(action_values)))
+    else:
+        max_value = np.max(action_values)
+        return np.random.choice([action_ for action_, value_ in enumerate(action_values) if value_ == max_value])
+
+
+def q_table_learning(num_episodes=200, alpha=0.1, gamma=0.95, epsilon=0.1):
     # Q-Table 초기화
     q_table = np.zeros([env.observation_space.n, env.action_space.n])
 
-    # reward 값과 observation 값들을 저장 해놓을 list
-
     episode_reward_list = []
 
-
+    training_steps = 0
+    last_episode_reward = 0
 
     for i in range(num_episodes):
+        episode_reward = 0  # cumulative_reward
+
         # Environment 초기화와 변수 초기화
         observation = env.reset()
         print("EPISODE: {0} - Initial State: {1}".format(i, observation), end=" ")
         sList = [observation]
 
-        episode_reward = 0  # cumulative_reward
         episode_step = 0
 
         # The Q-Table 알고리즘
         while True:
             episode_step += 1
             # 가장 Q값이 높은 action을 결정함
-            action = argmax(q_table[observation, :])
+            # action = greedy_action(q_table[observation, :])
+            action = epsilon_greedy_action(q_table[observation, :], epsilon)
 
             # action을 통해서 next_state, reward, done, info를 받아온다
             next_observation, reward, done, _ = env.step(action)
 
             # Q-Learning
-            q_table[observation, action] = reward + np.max(q_table[next_observation, :])
+            q_table[observation, action] = q_table[observation, action] + alpha * (reward + np.max(q_table[next_observation, :]) - q_table[observation, action])
+            episode_reward += (gamma ** (episode_step - 1)) * reward
+            training_steps += 1
+            episode_reward_list.append(last_episode_reward)
+
             sList.append(next_observation)
-
             observation = next_observation
-            episode_reward += reward
 
-            if done or episode_step >= 250:
+            if done or episode_step >= MAX_EPISODE_STEPS:
                 print(sList, done, "GOAL" if done and observation == 15 else "")
                 break
 
+        last_episode_reward = episode_reward
+
+    return q_table, training_steps, episode_reward_list
+
+
+def q_table_testing(num_episodes, q_table, gamma=0.95):
+    episode_reward_list = []
+
+    for i in range(num_episodes):
+        episode_reward = 0  # cumulative_reward
+
+        pass # 숙제
+
         episode_reward_list.append(episode_reward)
 
-    return q_table, episode_reward_list
+    return np.average(episode_reward_list), np.std(episode_reward_list)
 
 
 def main_env_info():
@@ -149,14 +178,19 @@ def main_env_info():
 
 
 def main_q_table_learning():
-    num_episodes = 100
-    q_table, episode_reward_list = q_table_learning(num_episodes)
+    NUM_EPISODES = 200
+    ALPHA = 0.1
+    GAMMA = 0.95
+    EPSILON = 0.1
+
+    q_table, training_steps, episode_reward_list = q_table_learning(NUM_EPISODES, ALPHA, GAMMA, EPSILON)
     print("\nFinal Q-Table Values")
     print("left down right up")
     print(q_table)
-    print("성공한 비율: ", sum(episode_reward_list) / num_episodes)
 
-    plt.bar(range(len(episode_reward_list)), episode_reward_list, color="Blue")
+    plt.plot(range(training_steps), episode_reward_list, color="Blue")
+    plt.xlabel("training steps")
+    plt.ylabel("episode reward")
     plt.show()
 
 
