@@ -31,7 +31,7 @@ gym.envs.register(
 
 # Make the environment based on deterministic policy
 env = gym.make('FrozenLakeNotSlippery-v0')
-# env = gym.make('FrozenLake-v0')
+#env = gym.make('FrozenLake-v0')
 
 
 # Q값이 모두 같을때 랜덤한 action을 구해주기 위한 함수
@@ -71,8 +71,8 @@ def q_table_learning(num_episodes=200, alpha=0.1, gamma=0.95, epsilon=0.1):
         while True:
             episode_step += 1
             # 가장 Q값이 높은 action을 결정함
-            # action = greedy_action(q_table[observation, :])
-            action = epsilon_greedy_action(q_table[observation, :], epsilon)
+            action = greedy_action(q_table[observation, :])
+            # action = epsilon_greedy_action(q_table[observation, :], epsilon)
 
             # action을 통해서 next_state, reward, done, info를 받아온다
             next_observation, reward, done, _ = env.step(action)
@@ -140,7 +140,8 @@ def main_env_info():
     print("*" * 80)
     # This sets the initial state at S, our starting point
     # We can render the environment to see where we are on the 4x4 frozenlake gridworld
-    env.reset()
+    observation = env.reset()
+    print(observation, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     env.render()
 
     action = 2  # RIGHT
@@ -185,8 +186,12 @@ def main_q_table_learning():
 
     q_table, training_steps, episode_reward_list = q_table_learning(NUM_EPISODES, ALPHA, GAMMA, EPSILON)
     print("\nFinal Q-Table Values")
-    print("left down right up")
-    print(q_table)
+    print("    LEFT   DOWN  RIGHT     UP")
+    for idx, observation in enumerate(q_table):
+        print("{0:2d}".format(idx), end=":")
+        for action_state in observation:
+            print("{0:5.3f} ".format(action_state), end=" ")
+        print()
 
     plt.plot(range(training_steps), episode_reward_list, color="Blue")
     plt.xlabel("training steps")
