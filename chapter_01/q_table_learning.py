@@ -81,8 +81,8 @@ def q_table_learning(num_episodes=200, alpha=0.1, gamma=0.95, epsilon=0.1):
 
             # Q-Learning
             q_table[observation, action] = q_table[observation, action] + alpha * (reward + gamma * np.max(q_table[next_observation, :]) - q_table[observation, action])
-            episode_reward += (gamma ** (episode_step - 1)) * reward
-            #episode_reward += reward
+            #episode_reward += (gamma ** (episode_step - 1)) * reward
+            episode_reward += reward  # episode_reward 를 산출하는 방법은 감가률 고려하지 않는 이 라인이 더 올바름.
             training_steps += 1  # Q-table 업데이트 횟수
             episode_reward_list.append(last_episode_reward)
 
