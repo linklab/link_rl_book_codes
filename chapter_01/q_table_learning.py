@@ -31,7 +31,7 @@ gym.envs.register(
 
 # Make the environment based on deterministic policy
 env = gym.make('FrozenLakeNotSlippery-v0')
-#env = gym.make('FrozenLake-v0')
+# env = gym.make('FrozenLake-v0')
 
 
 # Q값이 모두 같을때 랜덤한 action을 구해주기 위한 함수
@@ -71,16 +71,19 @@ def q_table_learning(num_episodes=200, alpha=0.1, gamma=0.95, epsilon=0.1):
         while True:
             episode_step += 1
             # 가장 Q값이 높은 action을 결정함
-            action = greedy_action(q_table[observation, :])
-            # action = epsilon_greedy_action(q_table[observation, :], epsilon)
+
+            # action = greedy_action(q_table[observation, :])
+
+            action = epsilon_greedy_action(q_table[observation, :], epsilon)
 
             # action을 통해서 next_state, reward, done, info를 받아온다
             next_observation, reward, done, _ = env.step(action)
 
             # Q-Learning
-            q_table[observation, action] = q_table[observation, action] + alpha * (reward + np.max(q_table[next_observation, :]) - q_table[observation, action])
+            q_table[observation, action] = q_table[observation, action] + alpha * (reward + gamma * np.max(q_table[next_observation, :]) - q_table[observation, action])
             episode_reward += (gamma ** (episode_step - 1)) * reward
-            training_steps += 1
+            #episode_reward += reward
+            training_steps += 1  # Q-table 업데이트 횟수
             episode_reward_list.append(last_episode_reward)
 
             sList.append(next_observation)
